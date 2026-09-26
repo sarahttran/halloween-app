@@ -682,7 +682,27 @@
 
                 </form>
 
-                <p id="searchMessage" role="status"></p>
+<p id="searchMessage" role="status"></p>
+
+
+<!-- Pin controls -->
+<div class="pin-controls">
+    <button id="placePinButton" type="button">
+        Place Pin
+    </button>
+
+    <button id="myLocationButton" type="button">
+        Find My Location
+    </button>
+
+    <button id="exportButton" type="button">
+        Export CSV
+    </button>
+</div>
+
+<p id="pinMessage" role="status"></p>
+
+
 
 
                 <!-- Your original pin controls -->
@@ -890,19 +910,16 @@
                     searchMessage.textContent =
                         result.display_name;
 
-                } catch (error) {
-
-                    searchMessage.textContent =
-                        "Search unavailable. Please try again.";
-
-                }
+            } catch (error) {
+                searchMessage.textContent =
+                    "Search unavailable. Please try again.";
             }
-        );
+        });
 
+        
+        // End of your neighborhood search
 
-        // =====================================
-        // PIN FUNCTIONALITY
-        // =====================================
+        // PIN FUNCTIONALITY HERE
 
         // Save and load pins
         const STORAGE_KEY = "trackYourTreatPins";
@@ -919,43 +936,31 @@
         const pinMessage =
             document.getElementById("pinMessage");
 
-
         // Display a pin on the map
         function displayPin(pin) {
-
             L.marker([pin.lat, pin.lng])
                 .addTo(map)
                 .bindPopup("Saved Halloween location");
-
         }
-
 
         // Restore pins when the website reloads
         savedPins.forEach(displayPin);
 
-
         // Activate pin placement
-        placePinButton.addEventListener(
-            "click",
-            function() {
+        placePinButton.addEventListener("click", function() {
+            placingPin = !placingPin;
 
-                placingPin = !placingPin;
+            placePinButton.textContent = placingPin
+                ? "Cancel Placement"
+                : "Place Pin";
 
-                placePinButton.textContent = placingPin
-                    ? "Cancel Placement"
-                    : "📍 Place Pin";
-
-                pinMessage.textContent = placingPin
-                    ? "Click the map to place your pin."
-                    : "";
-
-            }
-        );
-
+            pinMessage.textContent = placingPin
+                ? "Click the map to place your pin."
+                : "";
+        });
 
         // Save the location when the map is clicked
         map.on("click", function(event) {
-
             if (!placingPin) return;
 
             const pin = {
@@ -973,33 +978,23 @@
             displayPin(pin);
 
             placingPin = false;
-
-            placePinButton.textContent = "📍 Place Pin";
+            placePinButton.textContent = "Place Pin";
 
             pinMessage.textContent = "Pin saved!";
-
         });
 
-
-        // =====================================
-        // FIND MY LOCATION
-        // =====================================
-
+        // Find My Location button
         document.getElementById("myLocationButton")
             .addEventListener("click", function() {
 
                 if (!navigator.geolocation) {
-
                     pinMessage.textContent =
                         "Geolocation is not supported.";
-
                     return;
                 }
 
                 navigator.geolocation.getCurrentPosition(
-
                     function(position) {
-
                         map.setView(
                             [
                                 position.coords.latitude,
@@ -1007,34 +1002,22 @@
                             ],
                             16
                         );
-
                     },
-
                     function() {
-
                         pinMessage.textContent =
                             "Unable to access your location.";
-
                     }
-
                 );
-
             });
 
-
-        // =====================================
-        // EXPORT CSV
-        // =====================================
-
+        // Export saved pins to CSV
         document.getElementById("exportButton")
             .addEventListener("click", function() {
 
                 let csv = "latitude,longitude\n";
 
                 savedPins.forEach(function(pin) {
-
                     csv += pin.lat + "," + pin.lng + "\n";
-
                 });
 
                 const blob = new Blob([csv], {
@@ -1042,16 +1025,13 @@
                 });
 
                 const url = URL.createObjectURL(blob);
-
                 const link = document.createElement("a");
 
                 link.href = url;
                 link.download = "trackyourtreat-pins.csv";
-
                 link.click();
 
                 URL.revokeObjectURL(url);
-
             });
 
     </script>
