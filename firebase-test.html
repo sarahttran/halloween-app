@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase Database Test</title>
+</head>
+<body>
+  <h1>TrackYourTreat Database Test</h1>
+
+  <button id="add">Add Test House</button>
+  <button id="load">Retrieve Houses</button>
+
+  <pre id="results"></pre>
+
+  <script type="module">
+    import { addHouse, getHouses } from "./firebase.js";
+
+    const results = document.getElementById("results");
+
+    document.getElementById("add").onclick = async () => {
+      try {
+        const id = await addHouse();
+        results.textContent = "House added! ID: " + id;
+      } catch (error) {
+        results.textContent = "Error: " + error.message;
+        console.error(error);
+      }
+    };
+
+    document.getElementById("load").onclick = async () => {
+      try {
+        const houses = await getHouses();
+        results.textContent = JSON.stringify(houses, null, 2);
+      } catch (error) {
+        results.textContent = "Error: " + error.message;
+        console.error(error);
+      }
+    };
+  </script>
+</body>
+</html>
