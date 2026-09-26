@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b8db92">
+<title>TrackYourTreat · Real Streets Walking Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root { --purple:#65428a;--deep:#38234f;--orange:#ffae57;--cream:#fff8f0;--grass:#b8db92;--line:#e7def0 }
+* {box-sizing:border-box}
+html,body,#map {margin:0;height:100%;width:100%;font-family:Nunito,system-ui,sans-serif;color:var(--deep)}
+body {overflow:hidden;background:var(--grass)}
+button,input,select,textarea {font:inherit}
+button {cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible {outline:3px solid var(--orange);outline-offset:3px}
+#map,.leaflet-container {background-color:var(--grass);background-image:radial-gradient(#d2ebad 1.5px,transparent 1.5px);background-size:35px 35px}
+.leaflet-control-attribution {font-size:10px!important;background:#fff9!important;border-radius:10px 0 0 0;padding:2px 5px!important}
+.leaflet-control-attribution a {color:#634184}
+.leaflet-popup-content-wrapper{border:2px solid #e6d6ed;border-radius:18px;box-shadow:0 12px 36px #38234f27}
+.leaflet-popup-content {font:700 14px Nunito,sans-serif;margin:15px 18px;line-height:1.55}
+.leaflet-popup-content button {background:var(--purple);border:0;border-radius:14px;color:white;padding:7px 11px;margin-top:9px;font-weight:800}
+.leaflet-popup-content h3 {margin:0 0 4px;font-family:'Baloo 2',sans-serif;font-size:19px;color:var(--deep)}
+.leaflet-popup-tip{background:#fff}
+.top-area {position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;z-index:950;max-width:480px;margin:auto;pointer-events:none}
+.topbar {pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 13px;background:#fff9f0f5;border:2px solid white;border-radius:25px;box-shadow:0 8px 25px #533e5830;backdrop-filter:blur(13px)}
+.brand {flex:1;min-width:0}
+.brand h1{font:800 clamp(20px,5vw,25px)/1.1 'Baloo 2',sans-serif;margin:0;color:var(--purple)}
+.brand h1 span{color:#e98935}.brand small{font-size:11px;font-weight:800;color:#84718e}
+.pumpkin {font-size:31px}
+.round-btn {flex-shrink:0;border:0;width:43px;height:43px;border-radius:16px;background:#eee2f8;color:var(--purple);font-size:23px;box-shadow:0 3px 0 #d7c0e9;font-weight:900}
+.round-btn:active,.dock button:active {transform:translateY(2px)}
+.statusbar {display:flex;gap:7px;margin:9px 0;flex-wrap:wrap}
+.status {background:#fff9f0e8;border:2px solid white;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:900;box-shadow:0 5px 14px #3929511f;max-width:min(95vw,440px)}
+.status.orange{background:#ffe4bc;color:#854f24}
+.guidance {position:absolute;top:145px;left:50%;transform:translateX(-50%);z-index:910;max-width:90%;width:max-content;padding:7px 13px;border-radius:18px;background:#ffffffd9;color:#63477b;font-size:11px;font-weight:800;text-align:center;pointer-events:none}
+.side {position:absolute;right:13px;bottom:calc(148px + env(safe-area-inset-bottom));z-index:910;display:grid;gap:9px}
+.side button {border:2px solid white;border-radius:15px;background:#fffaf4f2;color:var(--purple);width:46px;height:46px;font-size:24px;font-weight:900;box-shadow:0 5px 15px #48335c2c}
+.pad {position:absolute;left:13px;bottom:calc(148px + env(safe-area-inset-bottom));z-index:910;width:120px;height:120px;border-radius:50%;background:#ffffffc9;border:3px solid white;box-shadow:0 8px 22px #49335b24;display:grid;place-items:center;touch-action:none}
+.pad button {position:absolute;border:0;width:37px;height:37px;border-radius:13px;background:#e8d6f5;color:#634184;font-size:18px;touch-action:none;user-select:none;box-shadow:0 2px 0 #c9aadf}
+.pad [data-dir="up"]{top:2px;left:39px}.pad [data-dir="down"]{bottom:2px;left:39px}.pad [data-dir="left"]{left:2px;top:39px}.pad [data-dir="right"]{right:2px;top:39px}
+.pad-center {width:27px;height:27px;display:grid;place-items:center;color:#a58cbb}
+.dock {position:absolute;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:940;max-width:490px;margin:auto;display:flex;gap:8px;padding:10px;border:2px solid white;border-radius:28px;background:#fff9f5f5;box-shadow:0 9px 32px #3e285c3a;backdrop-filter:blur(12px)}
+.dock button {display:flex;align-items:center;justify-content:center;gap:7px;flex:1;border:0;border-radius:19px;padding:13px 9px;font-size:13px;font-weight:900;white-space:nowrap}
+.dock .primary {background:var(--purple);color:white;box-shadow:0 4px 0 #4a2d69}
+.dock .secondary{background:#f1e5f8;color:var(--purple)}
+.dock .third{flex:0 0 46px;background:#fff0d8;color:#976122;font-size:20px}
+.ambient-house {filter:drop-shadow(0 4px 2px #5c804f36);opacity:.88}
+.ambient-house svg{width:44px;height:53px;overflow:visible}
+.spot-marker{filter:drop-shadow(0 7px 5px #62495a3d);background:none;border:0}
+.spot-marker .pin {position:absolute;top:0;left:17px;z-index:2;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:white;border:4px solid white;box-shadow:0 4px 0 #dfc0dc,0 6px 14px #40284d3b;font-size:25px;animation:bubble 3s ease-in-out infinite}
+.spot-marker .pin:after {content:"";position:absolute;bottom:-11px;border-width:10px 7px 0;border-style:solid;border-color:white transparent transparent}
+.spot-marker .spot-house{position:absolute;top:34px;left:9px;width:63px;height:65px}
+.spot-marker.demo .pin {background:#f1e9fa;border-color:#dfcbef;filter:grayscale(.35)}
+@keyframes bubble{50%{transform:translateY(-5px)}}
+.player-icon {background:none;border:0;overflow:visible!important}
+.player-wrap {position:relative;width:104px;height:128px;transform:translate(-5px,-3px);filter:drop-shadow(0 7px 6px #46683d60)}
+.location-halo{position:absolute;left:52px;bottom:6px;width:96px;height:57px;transform:translateX(-50%);background:#a8e7fe68;border:2px solid #e2f8ffb3;border-radius:50%;z-index:-1;animation:halo 2.8s ease-in-out infinite}
+.player-label{position:absolute;top:0;left:50%;transform:translateX(-50%);padding:2px 9px;border:2px solid white;border-radius:12px;background:var(--purple);color:white;font-weight:900;font-size:10px;white-space:nowrap;z-index:3}
+.character {position:absolute;top:11px;left:0;width:104px;height:116px;transform-origin:50% 85%;}
+.character svg {height:116px;width:104px;overflow:visible;transform:scaleX(var(--face,1))}
+.character.walking {animation:walk .25s alternate infinite ease-in-out}
+.character.walking .leg-l {animation:leg-l .32s alternate infinite}
+.character.walking .leg-r {animation:leg-r .32s alternate infinite}
+.character.walking .arm-l {animation:leg-r .32s alternate infinite}
+.character.walking .arm-r {animation:leg-l .32s alternate infinite}
+.leg-l,.leg-r,.arm-l,.arm-r{transform-box:fill-box;transform-origin:top center}
+@keyframes walk{to{transform:translateY(-3px) rotate(1.5deg)}}@keyframes leg-l{to{rotate:-25deg}}@keyframes leg-r{to{rotate:25deg}}
+@keyframes halo{50%{opacity:.55;scale:1.18}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.scrim{position:absolute;inset:0;z-index:990;background:#30213d8b;display:flex;align-items:flex-end;justify-content:center;padding:15px 12px calc(20px + env(safe-area-inset-bottom))}
+.scrim[hidden],.toast[hidden]{display:none!important}
+.panel{width:100%;max-width:475px;background:#fff9f0;border:3px solid white;border-radius:28px;padding:20px;box-shadow:0 20px 55px #1a152e66}
+.panel h2{font:800 27px/1.12 'Baloo 2',sans-serif;margin:0 0 5px;color:var(--purple)}
+.panel p {color:#766881;font-size:12px;font-weight:700;line-height:1.55;margin:0 0 12px}
+.form-row {display:grid;gap:4px;margin:11px 0}.form-row label{font-size:12px;font-weight:900;color:var(--purple)}
+.form-row input,.form-row select {width:100%;border-radius:13px;border:2px solid #e4d8ec;padding:10px 13px;font-size:15px;background:white;color:var(--deep)}
+.actions {display:flex;gap:10px;margin-top:18px}.actions button{border:0;border-radius:15px;padding:12px 14px;font-weight:900;flex:1}
+.actions .go {background:var(--purple);color:white}.actions .cancel {background:#eee1f5;color:var(--purple)}
+.nearby-list{max-height:min(320px,40vh);overflow:auto;display:grid;gap:7px;margin:13px 0}
+.nearby-list button{text-align:left;width:100%;border:2px solid #e7ddef;border-radius:16px;background:white;padding:10px 12px;font-size:13px;font-weight:800;color:var(--deep)}
+.nearby-list small{display:block;color:#786c82;font-size:11px;margin-top:3px}
+.toast{position:absolute;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1000;max-width:90%;border-radius:17px;border:2px solid #fff;background:#624189;color:white;padding:10px 17px;font-weight:800;font-size:13px;text-align:center;box-shadow:0 8px 24px #301e4266}
+@media(min-width:720px){.top-area{left:20px;right:auto;margin:0}.dock{right:20px;left:auto;margin:0;min-width:460px}.pad{bottom:25px}.side{bottom:25px}.guidance{top:18px}}
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Real street geometry, illustrated for walking mode"></div>
+<div class="top-area">
+  <div class="topbar"><span class="pumpkin">🎃</span><div class="brand"><h1>TrackYour<span>Treat</span></h1><small>Walking Mode · Real streets preview</small></div><button class="round-btn" type="button" id="costume" title="Change outfit" aria-label="Change outfit">🧙</button><button class="round-btn" type="button" id="gps" title="Follow my real GPS location" aria-label="Follow my real GPS location">⌖</button></div>
+  <div class="statusbar"><span class="status" id="dataStatus" role="status">Loading real street shapes…</span><span class="status orange" id="modeStatus">Preview mode · WASD to walk</span></div>
+</div>
+<div class="guidance" id="hint">Actual OSM roads + buildings · No candy status inferred</div>
+<div class="pad" aria-label="Move the character in preview mode"><button type="button" data-dir="up" aria-label="Walk north">▲</button><button type="button" data-dir="left" aria-label="Walk west">◀</button><div class="pad-center">✦</div><button type="button" data-dir="right" aria-label="Walk east">▶</button><button type="button" data-dir="down" aria-label="Walk south">▼</button></div>
+<div class="side"><button type="button" id="zoomIn" aria-label="Zoom in">+</button><button type="button" id="zoomOut" aria-label="Zoom out">−</button><button type="button" id="recenter" aria-label="Recenter map on avatar">⌖</button><button type="button" id="refresh" title="Fetch this map area" aria-label="Load nearby OSM data">↻</button></div>
+<nav class="dock" aria-label="Actions"><button type="button" class="primary" id="postBtn">＋ Post spot</button><button type="button" class="secondary" id="nearbyBtn">🍬 Nearby candy</button><button type="button" class="third" id="helpBtn" aria-label="How it works">?</button></nav>
+<div id="scrim" class="scrim" hidden><div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Real geographic coordinates throughout. The campus default is for testing only.
+// No house is marked as participating unless a visitor adds a post.
+const DEFAULT=[39.254,-76.714];
+const STORAGE_KEY='trackYourTreatPins'; // Same key as your existing index.html
+const $=id=>document.getElementById(id);
+const ICONS={candy:'🍬',chocolate:'🍫',lollipop:'🍭','yard-sale':'🏷️',community:'⭐'};
+const costumes=[{coat:'#65428a',hat:'#583b80',hair:'#65452c'},
+                {coat:'#e98649',hat:'#a9663e',hair:'#513529'},
+                {coat:'#78a87c',hat:'#487451',hair:'#513e30'},
+                {coat:'#dc85aa',hat:'#b85c81',hair:'#4f3548'}];
+let costume=0,previewLocation=L.latLng(DEFAULT),realGPS=false,gpsWatch=null,gpsAccuracy=null;
+let loadedCenter=null,loadingRequest=null,lastLoad=0,placing=false,postLayer=null;
+let lastFrame=performance.now(),pressed=new Set(),activeButton=null,stopWalkingTimer=null;
+const map=L.map('map',{zoomControl:false,attributionControl:true,preferCanvas:false,minZoom:15,maxZoom:20,zoomSnap:.25,zoomDelta:.5}).setView(DEFAULT,18);
+map.attributionControl.setPrefix(false);
+map.attributionControl.addAttribution('<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>');
+// No satellite or street map tile layer: we render OSM raw geometry as game art.
+const landLayer=L.layerGroup().addTo(map),roadLayer=L.layerGroup().addTo(map),buildingLayer=L.layerGroup().addTo(map),houseLayer=L.layerGroup().addTo(map);
+postLayer=L.layerGroup().addTo(map);
+const accuracyLayer=L.layerGroup().addTo(map);
+map.createPane('houses');map.getPane('houses').style.zIndex=490;
+map.createPane('posts');map.getPane('posts').style.zIndex=630;
+map.createPane('player');map.getPane('player').style.zIndex=680;
+const littleHouse=`<svg viewBox="0 0 48 55" aria-hidden="true"><ellipse cx="24" cy="49" rx="18" ry="5" fill="#4d774f" opacity=".18"/><path d="M10 19H38V46H10Z" fill="#ffdfaa" stroke="#bc996d" stroke-width="2"/><path d="M6 19 24 3 42 19Z" fill="#986e9f" stroke="#fff4d8" stroke-width="2.3" stroke-linejoin="round"/><path d="M20 32h8v14h-8z" fill="#ab794e"/><path d="M13 26h7v7h-7zm15 0h7v7h-7z" fill="#fff2a0" stroke="#dfbb6d"/></svg>`;
+const candyHouse=`<svg viewBox="0 0 68 68" aria-hidden="true"><ellipse cx="35" cy="61" rx="26" ry="5" fill="#597947" opacity=".22"/><path d="M8 27H60V58H8Z" fill="#ffdaa6" stroke="#bd8e64" stroke-width="2"/><path d="M2 28 34 4 66 28Z" fill="#8e69a1" stroke="#fff0d8" stroke-width="3" stroke-linejoin="round"/><path d="M28 43h12v15H28Z" fill="#ae7852"/><path d="M14 34h11v12H14zm29 0h11v12H43z" fill="#ffe993" stroke="#e9bd6b"/></svg>`;
+function characterSVG(outfit){const {coat,hat,hair}=outfit;return `<svg viewBox="0 0 110 127" aria-hidden="true"><ellipse cx="55" cy="117" rx="27" ry="7" fill="#3b603d" opacity=".19"/>
+<g class="leg-l"><path d="M44 91 40 112" stroke="#504375" stroke-width="11" stroke-linecap="round"/><ellipse cx="39" cy="114" rx="10" ry="5" fill="#49345d"/></g>
+<g class="leg-r"><path d="M67 91 72 111" stroke="#504375" stroke-width="11" stroke-linecap="round"/><ellipse cx="73" cy="114" rx="10" ry="5" fill="#49345d"/></g>
+<g class="arm-l"><path d="M41 75q-14 4-14 17" stroke="${coat}" stroke-width="13" stroke-linecap="round"/><circle cx="27" cy="93" r="6" fill="#f8ca9e"/></g>
+<g class="arm-r"><path d="M69 75q17 3 16 17" stroke="${coat}" stroke-width="13" stroke-linecap="round"/><circle cx="85" cy="92" r="6" fill="#f8ca9e"/></g>
+<path d="M43 69q-14 9-9 29h42q5-21-8-29Z" fill="${coat}" stroke="#fff6e4" stroke-width="2.5"/><path d="M51 73v23" stroke="#e9dff6" stroke-width="2"/><circle cx="56" cy="83" r="2" fill="#f9c879"/>
+<circle cx="55" cy="52" r="30" fill="${hair}" stroke="#fff6e5" stroke-width="3"/><circle cx="55" cy="54" r="24" fill="#f8ca9e"/><path d="M29 51q2-29 26-28 27 0 26 28-8-4-12-15-17 15-40 15" fill="${hair}"/>
+<ellipse cx="43" cy="62" rx="5" ry="3" fill="#ec9c91" opacity=".7"/><ellipse cx="68" cy="62" rx="5" ry="3" fill="#ec9c91" opacity=".7"/><circle cx="47" cy="53" r="2.2" fill="#4d3542"/><circle cx="64" cy="53" r="2.2" fill="#4d3542"/><path d="M52 61q4 4 8 0" fill="none" stroke="#754b4f" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 39Q39 13 55 1q3 15 19 25 7 7 8 13Z" fill="${hat}" stroke="#fff0ce" stroke-width="2.5"/><path d="M11 40q44-14 88 0-44 17-88 0Z" fill="${hat}" stroke="#fff0ce" stroke-width="2.5"/><path d="M28 35q33-6 47 1" stroke="#f4a54c" stroke-width="6" stroke-linecap="round"/><path d="M57 31l8 3-6 6-6-6Z" fill="#ffdc72"/></svg>`;}
+function playerHTML(){return `<div class="player-wrap"><span class="location-halo"></span><span class="player-label">YOU ✨</span><div class="character" id="playerCharacter">${characterSVG(costumes[costume])}</div></div>`;}
+const playerMarker=L.marker(previewLocation,{icon:L.divIcon({className:'player-icon',html:playerHTML(),iconSize:[104,128],iconAnchor:[52,117]}),pane:'player',interactive:false,zIndexOffset:5000}).addTo(map);
+function outfitChange(){costume=(costume+1)%costumes.length;const c=playerMarker.getElement()?.querySelector('.character');if(c){const walking=c.classList.contains('walking');c.innerHTML=characterSVG(costumes[costume]);if(walking)c.classList.add('walking');}notify('Costume changed!');}
+$('costume').addEventListener('click',outfitChange);
+function setWalking(moving){playerMarker.getElement()?.querySelector('.character')?.classList.toggle('walking',moving)}
+function notify(message){const t=$('toast');t.textContent=message;t.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>t.hidden=true,3300)}
+function meters(a,b){return map.distance(a,b)}
+function setAvatar(position,follow=true){previewLocation=L.latLng(position);playerMarker.setLatLng(previewLocation);if(follow)map.panTo(previewLocation,{animate:true,duration:.6});}
+$('zoomIn').onclick=()=>map.zoomIn(.5);$('zoomOut').onclick=()=>map.zoomOut(.5);
+$('recenter').onclick=()=>map.panTo(previewLocation,{animate:true,duration:.6});
+$('refresh').onclick=()=>loadArea(map.getCenter(),true);
+// OpenStreetMap's Overpass API gives *geometry*, not pre-rendered map tiles.
+// Request a modest neighborhood, never fetch on every GPS or animation frame.
+async function loadArea(center,force=false){
+ const here=L.latLng(center);
+ if(!force && loadedCenter && meters(loadedCenter,here)<330)return;
+ if(loadingRequest)loadingRequest.abort();
+ const controller=new AbortController();loadingRequest=controller;
+ $('dataStatus').textContent='Loading real streets…';
+ const s=(here.lat-.0043).toFixed(6),w=(here.lng-.0055).toFixed(6),n=(here.lat+.0043).toFixed(6),e=(here.lng+.0055).toFixed(6);
+ const bounds=`(${s},${w},${n},${e})`;
+ const query=`[out:json][timeout:24];(way["highway"~"^(residential|living_street|service|footway|path|pedestrian|unclassified)$"]${bounds};way["building"]${bounds};way["leisure"~"^(park|garden|playground)$"]${bounds};way["natural"~"^(water|wood)$"]${bounds};);out geom;`;
+ try {
+   const response=await fetch('https://overpass-api.de/api/interpreter',{
+     method:'POST',body:new URLSearchParams({data:query}),signal:controller.signal
+   });
+   if(!response.ok)throw new Error(`Overpass HTTP ${response.status}`);
+   const data=await response.json();
+   if(controller!==loadingRequest)return;
+   drawWorld(data.elements||[]);
+   loadedCenter=here;lastLoad=Date.now();
+ }catch(error){
+   if(error.name==='AbortError')return;
+   $('dataStatus').textContent='Map data unavailable · Try ↻';
+   console.warn('OpenStreetMap geometry request failed:',error);
+ }finally{if(loadingRequest===controller)loadingRequest=null;}
+}
+function points(element){return (element.geometry||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)).map(p=>[p.lat,p.lon]);}
+function drawWorld(features){
+ landLayer.clearLayers();roadLayer.clearLayers();buildingLayer.clearLayers();houseLayer.clearLayers();
+ const land=[],roads=[],buildings=[];
+ for(const f of features){if(f.type!=='way'||!f.tags)continue;
+  if(f.tags.leisure||['water','wood'].includes(f.tags.natural))land.push(f);
+  if(f.tags.highway)roads.push(f);
+  if(f.tags.building)buildings.push(f);
+ }
+ for(const f of land){const coords=points(f);if(coords.length<3)continue;
+  const water=f.tags.natural==='water',wood=f.tags.natural==='wood';
+  L.polygon(coords,{stroke:false,fillColor:water?'#85c5d8':wood?'#91bd80':'#a9d687',fillOpacity:.9,interactive:false}).addTo(landLayer);
+ }
+ for(const f of roads){const coords=points(f);if(coords.length<2)continue;
+  const foot=['footway','path','pedestrian'].includes(f.tags.highway);
+  L.polyline(coords,{color:foot?'#91be83':'#9ac47f',weight:foot?14:35,opacity:1,interactive:false,lineCap:'round',lineJoin:'round'}).addTo(roadLayer);
+  L.polyline(coords,{color:foot?'#f8e6c6':'#fff0d5',weight:foot?8:27,opacity:1,interactive:false,lineCap:'round',lineJoin:'round'}).addTo(roadLayer);
+ }
+ const artCoords=[];let icons=0;
+ for(const f of buildings){const coords=points(f);if(coords.length<3)continue;
+  L.polygon(coords,{color:'#aa9677',weight:1.3,fillColor:'#f5dfb6',fillOpacity:1,interactive:false}).addTo(buildingLayer);
+  const bb=L.latLngBounds(coords),nw=bb.getNorthWest(),se=bb.getSouthEast();
+  const wide=meters(nw,L.latLng(nw.lat,se.lng)),high=meters(nw,L.latLng(se.lat,nw.lng));
+  const likelyHouse=['house','detached','residential','semidetached_house','terrace','yes'].includes(f.tags.building);
+  if(!likelyHouse||wide*high>800||wide*high<24||icons>=130)continue;
+  const at=bb.getCenter();if(artCoords.some(c=>meters(c,at)<15))continue;
+  artCoords.push(at);icons++;
+  L.marker(at,{pane:'houses',interactive:false,icon:L.divIcon({className:'ambient-house',html:littleHouse,iconSize:[44,53],iconAnchor:[22,47]})}).addTo(houseLayer);
+ }
+ $('dataStatus').textContent=`${roads.length} real streets · ${buildings.length} mapped buildings`;
+}
+function safeReadPins(){try{const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(data)?data.filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&Math.abs(Number(p.lat))<=90&&Math.abs(Number(p.lng))<=180):[];}catch{return [];}}
+let posts=safeReadPins();
+function popupFor(p){const root=document.createElement('div'),title=document.createElement('h3'),details=document.createElement('div'),note=document.createElement('small');
+ title.textContent=p.title||'Reported candy location';details.textContent=p.details||'Visitor-added spot';note.textContent='Community report · Please verify participation';
+ root.append(title,details,note);return root;
+}
+function renderPosts(){postLayer.clearLayers();
+ posts.forEach(p=>{const type=ICONS[p.type]?p.type:'candy';const marker=L.marker([Number(p.lat),Number(p.lng)],{pane:'posts',icon:L.divIcon({className:'spot-marker',html:`<span class="pin" aria-hidden="true">${ICONS[type]}</span><span class="spot-house">${candyHouse}</span>`,iconSize:[80,104],iconAnchor:[40,98]})});
+ marker.bindPopup(popupFor(p));marker.addTo(postLayer);
+ });
+ $('nearbyBtn').textContent=`🍬 Nearby (${posts.length})`;
+}
+renderPosts();
+// Older posts from the homepage have only lat/lng. New posts add optional title/type.
+function addPost(p){posts=safeReadPins();posts.push(p);localStorage.setItem(STORAGE_KEY,JSON.stringify(posts));renderPosts();}
+window.addEventListener('storage',event=>{if(event.key===STORAGE_KEY){posts=safeReadPins();renderPosts();}});
+let selectedSpot=null;
+function showDialog(content){$('panel').replaceChildren(content);$('scrim').hidden=false;}
+function closeDialog(){$('scrim').hidden=true;placing=false;$('hint').textContent='Actual OSM roads + buildings · No candy status inferred';$('hint').style.background='';}
+$('scrim').addEventListener('click',e=>{if(e.target===$('scrim'))closeDialog()});
+function showPostForm(latlng){selectedSpot=latlng;
+ const form=document.createElement('form');
+ form.innerHTML=`<h2 id="panelTitle">Add a neighborhood spot</h2><p>Demo posts stay in this browser. Only report a private home with the resident’s permission.</p>
+ <div class="form-row"><label for="postTitle">Name</label><input id="postTitle" name="title" required maxlength="54" placeholder="e.g. Candy at the front porch"></div>
+ <div class="form-row"><label for="postType">Category</label><select name="type" id="postType"><option value="candy">🍬 Candy</option><option value="chocolate">🍫 Chocolate</option><option value="lollipop">🍭 Lollipops</option><option value="yard-sale">🏷️ Yard sale</option><option value="community">⭐ Community</option></select></div>
+ <div class="form-row"><label for="postDetails">Details (optional)</label><input id="postDetails" name="details" maxlength="140" placeholder="e.g. 6–9 PM, bowl outside"></div>
+ <p>Selected coordinates: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</p>
+ <div class="actions"><button class="cancel" type="button" id="cancelPost">Cancel</button><button type="submit" class="go">Publish locally</button></div>`;
+ showDialog(form);$('postTitle').focus();$('cancelPost').onclick=closeDialog;
+ form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form);const p={id:'walk-'+Date.now(),lat:selectedSpot.lat,lng:selectedSpot.lng,title:String(fd.get('title')).trim(),type:String(fd.get('type')),details:String(fd.get('details')).trim()};if(!p.title)return;addPost(p);closeDialog();map.panTo([p.lat,p.lng]);notify('Your pin now appears in both local maps!');};
+}
+$('postBtn').onclick=()=>{placing=true;$('hint').textContent='Tap the exact location you want to post · Avoid unapproved private homes';$('hint').style.background='#ffe7bf';notify('Tap a location on the real map');};
+map.on('click',e=>{if(!placing)return;placing=false;showPostForm(e.latlng)});
+$('nearbyBtn').onclick=()=>{
+ const area=document.createElement('div');const heading=document.createElement('h2');heading.id='panelTitle';heading.textContent='Nearby community reports';const copy=document.createElement('p');copy.textContent='Posts in this browser, sorted by distance from your avatar. These are reports, not verified participation.';
+ const list=document.createElement('div');list.className='nearby-list';
+ const near=[...posts].sort((a,b)=>meters(previewLocation,L.latLng(a.lat,a.lng))-meters(previewLocation,L.latLng(b.lat,b.lng))).slice(0,12);
+ if(!near.length){const p=document.createElement('p');p.textContent='No posts yet. Tap Post spot and add a test marker.';list.append(p);}
+ for(const p of near){const b=document.createElement('button');const metersAway=Math.round(meters(previewLocation,L.latLng(p.lat,p.lng)));b.textContent=(ICONS[p.type]||'🍬')+' '+(p.title||'Reported Halloween spot');const sub=document.createElement('small');sub.textContent=metersAway+' meters away · User-added';b.append(sub);b.onclick=()=>{closeDialog();map.setView([p.lat,p.lng],19);};list.append(b);}
+ const acts=document.createElement('div');acts.className='actions';const close=document.createElement('button');close.className='cancel';close.textContent='Back to map';close.onclick=closeDialog;acts.append(close);area.append(heading,copy,list,acts);showDialog(area);
+};
+$('helpBtn').onclick=()=>{
+ const area=document.createElement('div');area.innerHTML=`<h2 id="panelTitle">Real map, game-style look</h2><p>The streets and building shapes are real OSM map data. The houses are just illustrations; a building icon does <strong>not</strong> mean it has candy.</p><p>Use arrow keys, WASD, or the on-screen directional pad to simulate walking. Use ⌖ in the top bar to switch to your device's real location. Real GPS requires HTTPS or localhost.</p><p>Press + Post spot, then select a location to make a test post. It is stored in the same browser's <code>trackYourTreatPins</code> key as your existing homepage. Shared posts and actual other walkers need a database and opt-in presence.</p><div class="actions"><button class="go" id="gotIt">Got it</button></div>`;showDialog(area);$('gotIt').onclick=closeDialog;};
+// Explicitly opt in to real GPS; never send player movement to other users.
+function stopGPS(){if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;realGPS=false;accuracyLayer.clearLayers();$('modeStatus').textContent='Preview mode · WASD to walk';$('gps').setAttribute('aria-pressed','false');notify('GPS stopped · Practice controls active');}
+$('gps').onclick=()=>{
+ if(realGPS){stopGPS();return;}
+ if(!navigator.geolocation){notify('GPS is not available on this device');return;}
+ $('modeStatus').textContent='Requesting GPS permission…';
+ realGPS=true;let gotFix=false;
+ gpsWatch=navigator.geolocation.watchPosition(({coords})=>{
+  if(!realGPS)return;
+  const pos=L.latLng(coords.latitude,coords.longitude);
+  if(coords.accuracy>100){$('modeStatus').textContent=`GPS weak · ±${Math.round(coords.accuracy)} m`;return;}
+  const last=previewLocation;const first=!gotFix;gotFix=true;
+  if(first||meters(last,pos)>3){setAvatar(pos,true);const svg=playerMarker.getElement()?.querySelector('.character svg');if(svg&&Math.abs(pos.lng-last.lng)>.00001)svg.style.setProperty('--face',pos.lng<last.lng?-1:1);setWalking(true);clearTimeout(stopWalkingTimer);stopWalkingTimer=setTimeout(()=>setWalking(false),850);}
+  accuracyLayer.clearLayers();
+  L.circle(pos,{radius:coords.accuracy,color:'#5eb7df',weight:1,fillColor:'#9edff5',fillOpacity:.16,interactive:false}).addTo(accuracyLayer);
+  $('modeStatus').textContent=`Live GPS · ±${Math.round(coords.accuracy)} m`;
+  $('gps').setAttribute('aria-pressed','true');
+  if((first||!loadedCenter||meters(loadedCenter,pos)>340)&&Date.now()-lastLoad>18000)loadArea(pos);
+ },err=>{stopGPS();notify('Location unavailable: '+err.message);},
+ {enableHighAccuracy:true,maximumAge:5000,timeout:18000});
+};
+// Keyboard/on-screen preview is intentionally disabled while GPS is live.
+const directions={ArrowUp:[0,1],KeyW:[0,1],ArrowDown:[0,-1],KeyS:[0,-1],ArrowLeft:[-1,0],KeyA:[-1,0],ArrowRight:[1,0],KeyD:[1,0]};
+const focusIsForm=()=>['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||!$('scrim').hidden;
+window.addEventListener('keydown',e=>{if(directions[e.code]&&!focusIsForm()){pressed.add(e.code);e.preventDefault();}});
+window.addEventListener('keyup',e=>{pressed.delete(e.code)});
+window.addEventListener('blur',()=>pressed.clear());
+for(const button of document.querySelectorAll('.pad button')){
+ const end=()=>{if(activeButton===button.dataset.dir)activeButton=null;};
+ button.addEventListener('pointerdown',e=>{button.setPointerCapture(e.pointerId);activeButton=button.dataset.dir;e.preventDefault()});
+ button.addEventListener('pointerup',end);button.addEventListener('pointercancel',end);button.addEventListener('lostpointercapture',end);
+}
+const btnDir={up:[0,1],down:[0,-1],left:[-1,0],right:[1,0]};
+let lastPreviewPan=0;
+function frame(now){const dt=Math.min((now-lastFrame)/1000,.05);lastFrame=now;
+ let east=0,north=0;
+ if(!realGPS&&$('scrim').hidden){for(const key of pressed){const d=directions[key];if(d){east+=d[0];north+=d[1];}}if(activeButton){east+=btnDir[activeButton][0];north+=btnDir[activeButton][1];}}
+ const magnitude=Math.hypot(east,north);if(magnitude){const speed=2.7;const lat=previewLocation.lat+north/magnitude*speed*dt/111320;const lng=previewLocation.lng+east/magnitude*speed*dt/(111320*Math.cos(previewLocation.lat*Math.PI/180));
+ setAvatar([lat,lng],false);if(now-lastPreviewPan>90){map.panTo(previewLocation,{animate:false});lastPreviewPan=now;}const svg=playerMarker.getElement()?.querySelector('.character svg');if(svg&&east!==0)svg.style.setProperty('--face',east<0?-1:1);}
+ if(!realGPS)setWalking(magnitude>0);
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// A single 1-km-scale request at startup. Refresh manually when browsing elsewhere.
+loadArea(map.getCenter());
+</script>
+</body>
+</html>
