@@ -1,1040 +1,454 @@
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrackYourTreat</title>
 
     <!-- Google Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <!-- Leaflet CSS -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
-
-    <style>
-
-        /* =====================================
-            THEME VARIABLES
-           ===================================== */
-
-        :root {
-            --background: #fff8f0;
-            --purple: #65428a;
-            --dark-purple: #38234f;
-            --light-purple: #f0e3ff;
-
-            --orange: #ffae57;
-            --orange-dark: #e9872b;
-
-            --pink: #ffd9eb;
-            --green: #d8f3da;
-
-            --white: #ffffff;
-            --text: #38234f;
-            --muted: #776a80;
-            --border: #e9def0;
-
-            --shadow: 0 8px 25px rgba(56, 35, 79, 0.10);
-        }
-
-        /* =====================================
-        GENERAL STYLING
-           ===================================== */
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 100px;
-        }
-
-        body {
-            margin: 0;
-            background: var(--background);
-            color: var(--text);
-            font-family: "Nunito", Arial, sans-serif;
-        }
-
-        h1, h2, h3 {
-            font-family: "Baloo 2", sans-serif;
-        }
-
-        button, input {
-            font-family: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .container {
-            width: min(1150px, 92%);
-            margin: auto;
-        }
-
-        /* =====================================
-            NAVBAR
-           ===================================== */
-
-        .navbar {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-
-            background: var(--white);
-            border-bottom: 2px solid var(--border);
-            box-shadow: 0 3px 12px rgba(56, 35, 79, 0.05);
-        }
-
-        .nav-content {
-            min-height: 75px;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .logo {
-            color: var(--purple);
-            font-family: "Baloo 2", sans-serif;
-            font-weight: 800;
-            font-size: 27px;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-links a {
-            color: var(--dark-purple);
-            text-decoration: none;
-            font-weight: 800;
-
-            padding: 9px 18px;
-            border-radius: 30px;
-
-            transition: 0.2s;
-        }
-
-        .nav-links a:hover {
-            background: var(--light-purple);
-        }
-
-        .nav-links .nav-button {
-            background: var(--purple);
-            color: var(--white);
-        }
-
-        .nav-links .nav-button:hover {
-            background: var(--dark-purple);
-        }
-
-        /* =====================================
-            WELCOME SECTION
-           ===================================== */
-
-        .hero {
-            padding: 32px 0 24px;
-        }
-
-        .hero-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 30px;
-
-            min-height: 255px;
-            padding: 30px 45px;
-
-            background: var(--light-purple);
-            border: 3px solid var(--purple);
-            border-radius: 35px;
-
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .hero-text {
-            max-width: 620px;
-        }
-
-        .hero-label {
-            display: inline-block;
-
-            padding: 6px 15px;
-
-            background: var(--white);
-            border-radius: 30px;
-
-            color: var(--purple);
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .hero h1 {
-            margin: 12px 0;
-            font-size: clamp(35px, 5vw, 57px);
-            line-height: 1.05;
-        }
-
-        .hero h1 span {
-            color: var(--orange-dark);
-        }
-
-        .hero p {
-            max-width: 560px;
-            font-size: 16px;
-            line-height: 1.6;
-            margin: 0 0 22px;
-        }
-
-        .hero-image {
-            position: relative;
-
-            min-width: 215px;
-            height: 200px;
-
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
-            background: var(--green);
-            border-radius: 50%;
-        }
-
-        .hero-image .pumpkin {
-            font-size: 110px;
-            line-height: 1;
-        }
-
-        .hero-image .ghost {
-            position: absolute;
-            top: -10px;
-            right: -12px;
-            font-size: 46px;
-        }
-
-        .hero-image .candy {
-            position: absolute;
-            bottom: -5px;
-            left: -15px;
-            font-size: 42px;
-        }
-
-        /* =====================================
-            BUBBLY BUTTONS
-           ===================================== */
-
-        .button {
-            display: inline-block;
-
-            padding: 12px 23px;
-            border: none;
-            border-radius: 30px;
-
-            font-size: 15px;
-            font-weight: 800;
-            text-decoration: none;
-
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .button:hover {
-            transform: translateY(-2px);
-        }
-
-        .button-orange {
-            background: var(--orange);
-            color: var(--dark-purple);
-            box-shadow: 0 5px 0 var(--orange-dark);
-        }
-
-        .button-purple {
-            background: var(--purple);
-            color: var(--white);
-        }
-
-        .button-white {
-            background: var(--white);
-            color: var(--purple);
-            border: 2px solid var(--border);
-        }
-
-        /* =====================================
-            MAP SECTION
-           ===================================== */
-
-        .map-section {
-            padding: 10px 0 45px;
-        }
-
-        .section-heading {
-            margin-bottom: 20px;
-        }
-
-        .section-heading h2 {
-            font-size: 36px;
-            margin: 0;
-        }
-
-        .section-heading p {
-            color: var(--muted);
-            margin: 0;
-        }
-
-        .map-card {
-            background: var(--white);
-
-            padding: 20px;
-            border: 2px solid var(--border);
-            border-radius: 28px;
-
-            box-shadow: var(--shadow);
-        }
-
-        /* Search bar */
-
-        #searchForm {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 13px;
-        }
-
-        #searchInput {
-            flex: 1;
-            min-width: 0;
-
-            padding: 13px 18px;
-
-            border: 2px solid var(--border);
-            border-radius: 30px;
-
-            font-size: 15px;
-            outline: none;
-        }
-
-        #searchInput:focus {
-            border-color: var(--purple);
-        }
-
-        #searchForm button {
-            padding: 12px 25px;
-
-            border: none;
-            border-radius: 30px;
-
-            background: var(--purple);
-            color: var(--white);
-
-            font-weight: 800;
-        }
-
-        #searchMessage {
-            margin: 8px 0;
-            font-size: 13px;
-            color: var(--purple);
-            overflow-wrap: anywhere;
-        }
-
-        #searchMessage:empty,
-        #pinMessage:empty {
-            display: none;
-        }
-
-        /* Existing pin controls */
-
-        .pin-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-
-            margin: 15px 0;
-        }
-
-        .pin-controls button {
-            padding: 11px 19px;
-
-            border: none;
-            border-radius: 30px;
-
-            font-size: 14px;
-            font-weight: 800;
-
-            transition: 0.2s;
-        }
-
-        .pin-controls button:hover {
-            transform: translateY(-2px);
-        }
-
-        #placePinButton {
-            background: var(--orange);
-            color: var(--dark-purple);
-        }
-
-        #myLocationButton {
-            background: var(--light-purple);
-            color: var(--purple);
-        }
-
-        #exportButton {
-            background: var(--green);
-            color: var(--dark-purple);
-        }
-
-        #pinMessage {
-            margin: 10px 0;
-            color: var(--purple);
-            font-weight: 800;
-        }
-
-        /* Existing Leaflet map */
-
-        #map {
-            height: 500px;
-            width: 100%;
-
-            border: 2px solid var(--border);
-            border-radius: 20px;
-
-            z-index: 1;
-        }
-
-        .map-footer {
-            padding: 12px 5px 0;
-
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        /* =====================================
-            HOW IT WORKS
-           ===================================== */
-
-        .how-section {
-            padding: 0 0 55px;
-        }
-
-        .how-section h2 {
-            font-size: 35px;
-            margin: 0 0 18px;
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-        }
-
-        .step-card {
-            padding: 25px;
-
-            background: var(--white);
-            border: 2px solid var(--border);
-            border-radius: 25px;
-
-            box-shadow: var(--shadow);
-        }
-
-        .step-card:nth-child(2) {
-            background: var(--pink);
-        }
-
-        .step-card:nth-child(3) {
-            background: var(--green);
-        }
-
-        .step-icon {
-            font-size: 36px;
-        }
-
-        .step-card h3 {
-            font-size: 23px;
-            margin: 8px 0;
-        }
-
-        .step-card p {
-            color: var(--muted);
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        /* =====================================
-            FOOTER
-           ===================================== */
-
-        footer {
-            padding: 26px 15px;
-
-            background: var(--light-purple);
-            text-align: center;
-
-            color: var(--purple);
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        /* =====================================
-            MOBILE RESPONSIVENESS
-           ===================================== */
-
-        @media (max-width: 800px) {
-
-            .nav-content {
-                flex-direction: column;
-                gap: 0;
-                padding: 12px 0;
-            }
-
-            .nav-links {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-
-            .nav-links a {
-                padding: 7px 12px;
-                font-size: 13px;
-            }
-
-            .hero-card {
-                padding: 25px;
-            }
-
-            .hero-image {
-                min-width: 140px;
-                height: 140px;
-            }
-
-            .hero-image .pumpkin {
-                font-size: 75px;
-            }
-
-            .steps {
-                grid-template-columns: 1fr;
-            }
-
-            #map {
-                height: 420px;
-            }
-        }
-
-        @media (max-width: 550px) {
-
-            .hero-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .hero-image {
-                display: none;
-            }
-
-            .section-heading h2 {
-                font-size: 29px;
-            }
-
-            .map-card {
-                padding: 12px;
-            }
-
-            #searchForm {
-                flex-direction: column;
-            }
-
-            .pin-controls button {
-                flex: 1;
-            }
-
-            #map {
-                height: 350px;
-            }
-        }
-
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS and site styles -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-    <!-- =====================================
-        NAVBAR
-        ===================================== -->
-
+    <!-- Navbar -->
     <header class="navbar">
         <div class="container nav-content">
-
-            <a href="#home" class="logo">
-                🎃 TrackYourTreat
-            </a>
-
+            <a href="#home" class="logo">🎃 TrackYourTreat</a>
             <nav class="nav-links" aria-label="Main navigation">
                 <a href="#home">Home</a>
                 <a href="#map-section">Map</a>
                 <a href="#how-it-works">How It Works</a>
-                <a href="#map-section" class="nav-button">
-                    🍬 View Map
-                </a>
+                <a href="#map-section" class="nav-button">🍬 View Map</a>
             </nav>
-
         </div>
     </header>
 
-
-    <!-- =====================================
-        HOMEPAGE WELCOME
-        ===================================== -->
-
+    <!-- Welcome -->
     <section class="hero" id="home">
         <div class="container">
-
             <div class="hero-card">
-
                 <div class="hero-text">
-
-                    <span class="hero-label">
-                        YOUR NEIGHBORHOOD FRIEND
-                    </span>
-
-                    <h1>
-                        Less searching.<br>
-                        <span>More treating!</span>
-                    </h1>
-
+                    <span class="hero-label">YOUR NEIGHBORHOOD FRIEND</span>
+                    <h1>Less searching.<br><span>More treating!</span></h1>
                     <p>
-                        Find participating houses in your
-                        neighborhood! Explore the map,
-                        discover treats, or add your own
-                        house for Halloween.
+                        Find participating houses in your neighborhood! Explore the map,
+                        discover treats, or add your own house for Halloween.
                     </p>
-
-                    <a
-                        href="#map-section"
-                        class="button button-orange"
-                    >
-                        🍬 View Map ↓
-                    </a>
-
+                    <a href="#map-section" class="button button-orange">🍬 View Map ↓</a>
                 </div>
-
                 <div class="hero-image" aria-hidden="true">
                     <span class="pumpkin">🎃</span>
                     <span class="ghost">👻</span>
                     <span class="candy">🍬</span>
                 </div>
-
             </div>
-
         </div>
     </section>
 
-
-    <!-- =====================================
-         MAP SECTION
-         ===================================== -->
-
+    <!-- Map -->
     <section class="map-section" id="map-section">
-
         <div class="container">
-
             <div class="section-heading">
-
                 <h2>Find your next sweet stop! 🍭</h2>
-
-                <p>
-                    Explore the neighborhood or add
-                    a pin to the map.
-                </p>
-
+                <p>Explore the neighborhood or add a pin to the map.</p>
             </div>
-
 
             <div class="map-card">
-
                 <!-- Neighborhood search -->
-
                 <form id="searchForm">
-
-                    <input
-                        id="searchInput"
-                        type="search"
-                        placeholder="Search a neighborhood or ZIP code"
-                        aria-label="Neighborhood or ZIP code"
-                        required
-                    >
-
-                    <button type="submit">
-                        Search
-                    </button>
-
+                    <input id="searchInput" type="search" placeholder="Search a neighborhood or ZIP code"
+                           aria-label="Neighborhood or ZIP code" required>
+                    <button type="submit">Search</button>
                 </form>
+                <p id="searchMessage" role="status"></p>
 
-<p id="searchMessage" role="status"></p>
-
-
-<!-- Pin controls -->
-<div class="pin-controls">
-    <button id="placePinButton" type="button">
-        Place Pin
-    </button>
-
-    <button id="myLocationButton" type="button">
-        Find My Location
-    </button>
-
-    <button id="exportButton" type="button">
-        Export CSV
-    </button>
-</div>
-
-<p id="pinMessage" role="status"></p>
-
-
-
-
-                <!-- Your original pin controls -->
-
+                <!-- Pin controls: preserved as in your pasted file -->
                 <div class="pin-controls">
-
-                    <button
-                        id="placePinButton"
-                        type="button"
-                    >
-                        📍 Place Pin
-                    </button>
-
-                    <button
-                        id="myLocationButton"
-                        type="button"
-                    >
-                        🎯 Find My Location
-                    </button>
-
-                    <button
-                        id="exportButton"
-                        type="button"
-                    >
-                        📁 Export CSV
-                    </button>
-
+                    <button id="placePinButton" type="button">Place Pin</button>
+                    <button id="myLocationButton" type="button">Find My Location</button>
+                    <button id="exportButton" type="button">Export CSV</button>
                 </div>
-
                 <p id="pinMessage" role="status"></p>
 
-
-                <!-- Your existing map -->
-
                 <div id="map"></div>
-
-
                 <div class="map-footer">
-                    Click Place Pin, then click a
-                    location on the map to save it.
+                    Click Place Pin, move the candy corn to your house, then click the map to add it.
                 </div>
-
             </div>
-
         </div>
-
     </section>
 
-
-    <!-- =====================================
-         HOW IT WORKS
-         ===================================== -->
-
+    <!-- How it works -->
     <section class="how-section" id="how-it-works">
-
         <div class="container">
-
             <h2>How it works ✨</h2>
-
             <div class="steps">
-
                 <div class="step-card">
-
                     <div class="step-icon">🗺️</div>
-
                     <h3>Explore the map</h3>
-
-                    <p>
-                        Search your neighborhood and
-                        see participating houses.
-                    </p>
-
+                    <p>Search your neighborhood and see participating houses.</p>
                 </div>
-
-
                 <div class="step-card">
-
                     <div class="step-icon">🏠</div>
-
                     <h3>Add your house</h3>
-
-                    <p>
-                        Place a pin to share your
-                        Halloween location.
-                    </p>
-
+                    <p>Place a pin to share your Halloween location.</p>
                 </div>
-
-
                 <div class="step-card">
-
                     <div class="step-icon">🍫</div>
-
                     <h3>Find the treats</h3>
-
-                    <p>
-                        Explore the map and discover
-                        your next trick-or-treat stop!
-                    </p>
-
+                    <p>Explore the map and discover your next trick-or-treat stop!</p>
                 </div>
-
             </div>
-
         </div>
-
     </section>
 
+    <footer>🎃 TrackYourTreat - Made for a sweeter Halloween!</footer>
 
-    <!-- FOOTER -->
+    <!-- Simple form: shown after someone chooses a point on the map. -->
+    <dialog id="houseDialog" class="house-dialog" aria-labelledby="houseDialogTitle">
+        <form id="houseForm" class="house-form">
+            <div class="dialog-heading">
+                <div>
+                    <span class="dialog-eyebrow">TRACK YOUR TREAT</span>
+                    <h2 id="houseDialogTitle">Add a house 🎃</h2>
+                    <p>Share a little information about this stop.</p>
+                </div>
+                <button id="closeHouseDialog" class="dialog-close" type="button" aria-label="Close">×</button>
+            </div>
 
-    <footer>
-        🎃 TrackYourTreat — Made for a sweeter Halloween!
-    </footer>
+            <label for="houseAddress">Address</label>
+            <input id="houseAddress" name="address" type="text" maxlength="180"
+                   placeholder="Looking up address..." required>
+            <p id="addressHint" class="address-hint" aria-live="polite">We’ll suggest an address when you choose a location. You can edit it.</p>
+            <p id="pinCoordinates" class="pin-coordinates"></p>
 
+            <label for="candyStatus">Candy status</label>
+            <select id="candyStatus" name="status" required>
+                <option value="Handing out candy">🍬 Handing out candy</option>
+                <option value="Starting soon">⏰ Starting soon</option>
+                <option value="Running low">🎃 Running low</option>
+                <option value="Out of candy">🚫 Out of candy</option>
+            </select>
 
-    <!-- =====================================
-         YOUR EXISTING JAVASCRIPT
-         ===================================== -->
+            <label for="houseComments">Comments (optional)</label>
+            <textarea id="houseComments" name="comments" maxlength="250" rows="3"
+                      placeholder="e.g. Chocolate and gummies, 6–9 PM"></textarea>
 
-    <!-- Leaflet JavaScript -->
+            <p class="dialog-note">Demo: saves on this browser until Firebase is connected.</p>
+            <p id="formMessage" class="form-message" role="status" aria-live="polite"></p>
+            <div class="dialog-actions">
+                <button id="cancelHouse" class="button button-white" type="button">Cancel</button>
+                <button id="saveHouse" class="button button-orange" type="submit">Save house</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Leaflet and existing functionality -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
+        // Map setup
+        const map = L.map("map").setView([39.254, -76.714], 15);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-        // Create a map centered near UMBC
-        const map = L.map("map").setView(
-            [39.254, -76.714],
-            15
-        );
+        // Candy corn points DOWN
+        const candyCornSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 70" width="52" height="70" aria-hidden="true">
+                <defs>
+                    <clipPath id="corn-shape">
+                        <path d="M8 7 Q26 -1 44 7 Q47 9 45 17 L31 57 Q26 69 21 57 L7 17 Q5 9 8 7Z"/>
+                    </clipPath>
+                </defs>
+                <path d="M8 7 Q26 -1 44 7 Q47 9 45 17 L31 57 Q26 69 21 57 L7 17 Q5 9 8 7Z"
+                      fill="#5e355d" stroke="#5e355d" stroke-width="2.5"/>
+                <g clip-path="url(#corn-shape)">
+                    <rect x="5" y="2" width="42" height="22" fill="#ffdf68"/>
+                    <rect x="5" y="24" width="42" height="21" fill="#fa8b32"/>
+                    <rect x="5" y="45" width="42" height="24" fill="#fffaf0"/>
+                </g>
+                <path d="M9 9 Q26 2 43 9" fill="none" stroke="#fff6cc" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+            </svg>`;
+        const candyCornIcon = L.divIcon({
+            className: "candy-corn-icon",
+            html: candyCornSvg,
+            iconSize: [52, 70],
+            iconAnchor: [26, 65],
+            popupAnchor: [0, -52]
+        });
 
-        // Add OpenStreetMap
-        L.tileLayer(
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                maxZoom: 19,
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
-        ).addTo(map);
-
-        // Add an example participating house
-        L.marker([39.255, -76.713])
+        // Example house remains an example (it isn't included in CSV exports).
+        L.marker([39.255, -76.713], { icon: candyCornIcon })
             .addTo(map)
-            .bindPopup(
-                "<b>Participating House</b><br>" +
-                "Candy: Chocolate and gummies<br>" +
-                "Hours: 6 PM - 9 PM"
-            );
+            .bindPopup("<b>Participating House</b><br>Candy: Chocolate and gummies<br>Hours: 6 PM - 9 PM");
 
-
-        // =====================================
-        // NEIGHBORHOOD SEARCH
-        // =====================================
-
-        const searchForm =
-            document.getElementById("searchForm");
-
-        const searchInput =
-            document.getElementById("searchInput");
-
-        const searchMessage =
-            document.getElementById("searchMessage");
-
-        searchForm.addEventListener(
-            "submit",
-            async function(event) {
-
-                event.preventDefault();
-
-                const location = searchInput.value.trim();
-
-                if (!location) return;
-
-                searchMessage.textContent = "Searching...";
-
-                try {
-
-                    const url =
-                        "https://nominatim.openstreetmap.org/search" +
-                        "?format=json&limit=1&q=" +
-                        encodeURIComponent(location);
-
-                    const response = await fetch(url);
-
-                    if (!response.ok) {
-                        throw new Error("Search request failed");
-                    }
-
-                    const results = await response.json();
-
-                    if (results.length === 0) {
-                        searchMessage.textContent =
-                            "Location not found.";
-                        return;
-                    }
-
-                    const result = results[0];
-
-                    map.setView(
-                        [Number(result.lat), Number(result.lon)],
-                        14
-                    );
-
-                    searchMessage.textContent =
-                        result.display_name;
-
-            } catch (error) {
-                searchMessage.textContent =
-                    "Search unavailable. Please try again.";
-            }
-        });
-
-        
-        // End of your neighborhood search
-
-        // PIN FUNCTIONALITY HERE
-
-        // Save and load pins
-        const STORAGE_KEY = "trackYourTreatPins";
-
-        let savedPins = JSON.parse(
-            localStorage.getItem(STORAGE_KEY) || "[]"
-        );
-
-        let placingPin = false;
-
-        const placePinButton =
-            document.getElementById("placePinButton");
-
-        const pinMessage =
-            document.getElementById("pinMessage");
-
-        // Display a pin on the map
-        function displayPin(pin) {
-            L.marker([pin.lat, pin.lng])
-                .addTo(map)
-                .bindPopup("Saved Halloween location");
-        }
-
-        // Restore pins when the website reloads
-        savedPins.forEach(displayPin);
-
-        // Activate pin placement
-        placePinButton.addEventListener("click", function() {
-            placingPin = !placingPin;
-
-            placePinButton.textContent = placingPin
-                ? "Cancel Placement"
-                : "Place Pin";
-
-            pinMessage.textContent = placingPin
-                ? "Click the map to place your pin."
-                : "";
-        });
-
-        // Save the location when the map is clicked
-        map.on("click", function(event) {
-            if (!placingPin) return;
-
-            const pin = {
-                lat: event.latlng.lat,
-                lng: event.latlng.lng
-            };
-
-            savedPins.push(pin);
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(savedPins)
-            );
-
-            displayPin(pin);
-
-            placingPin = false;
-            placePinButton.textContent = "Place Pin";
-
-            pinMessage.textContent = "Pin saved!";
-        });
-
-        // Find My Location button
-        document.getElementById("myLocationButton")
-            .addEventListener("click", function() {
-
-                if (!navigator.geolocation) {
-                    pinMessage.textContent =
-                        "Geolocation is not supported.";
+        // Neighborhood search - unchanged behavior.
+        const searchForm = document.getElementById("searchForm");
+        const searchInput = document.getElementById("searchInput");
+        const searchMessage = document.getElementById("searchMessage");
+        searchForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const location = searchInput.value.trim();
+            if (!location) return;
+            searchMessage.textContent = "Searching...";
+            try {
+                const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+                    encodeURIComponent(location);
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Search request failed");
+                const results = await response.json();
+                if (!results.length) {
+                    searchMessage.textContent = "Location not found.";
                     return;
                 }
+                const result = results[0];
+                map.setView([Number(result.lat), Number(result.lon)], 14);
+                searchMessage.textContent = result.display_name;
+            } catch (error) {
+                searchMessage.textContent = "Search unavailable. Please try again.";
+            }
+        });
 
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        map.setView(
-                            [
-                                position.coords.latitude,
-                                position.coords.longitude
-                            ],
-                            16
-                        );
-                    },
-                    function() {
-                        pinMessage.textContent =
-                            "Unable to access your location.";
-                    }
-                );
-            });
+        // HOUSE PINS + FORM
+        // Firebase handoff: replace loadHouses() and saveHouseData() with your
+        // partner's Firestore code. House fields: {lat, lng, address, status, comments}.
+        const STORAGE_KEY = "trackYourTreatPins";
+        let savedPins = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        let placingPin = false;
+        let pendingLocation = null;
+        let editingIndex = null;
+        let previewMarker = null;
+        let houseMarkers = [];
+        let addressRequestNumber = 0;
+        const placePinButton = document.getElementById("placePinButton");
+        const pinMessage = document.getElementById("pinMessage");
+        const houseDialog = document.getElementById("houseDialog");
+        const houseForm = document.getElementById("houseForm");
+        const houseAddress = document.getElementById("houseAddress");
+        const addressHint = document.getElementById("addressHint");
+        const pinCoordinates = document.getElementById("pinCoordinates");
+        const candyStatus = document.getElementById("candyStatus");
+        const houseComments = document.getElementById("houseComments");
+        const formMessage = document.getElementById("formMessage");
+        const saveHouseButton = document.getElementById("saveHouse");
 
-        // Export saved pins to CSV
-        document.getElementById("exportButton")
-            .addEventListener("click", function() {
+        async function loadHouses() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        }
 
-                let csv = "latitude,longitude\n";
+        async function saveHouseData(house, index) {
+            const houses = await loadHouses();
+            if (index === null) houses.push(house);
+            else houses[index] = house;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(houses));
+            return houses;
+        }
 
-                savedPins.forEach(function(pin) {
-                    csv += pin.lat + "," + pin.lng + "\n";
-                });
+        function displayPin(house, index) {
+            const marker = L.marker([house.lat, house.lng], { icon: candyCornIcon }).addTo(map);
+            const content = document.createElement("div");
+            content.className = "house-popup";
+            const title = document.createElement("strong");
+            title.textContent = house.address || "Saved Halloween location";
+            content.append(title);
+            for (const [label, value] of [["Status", house.status], ["Comments", house.comments]]) {
+                if (!value) continue;
+                const line = document.createElement("p");
+                const bold = document.createElement("b");
+                bold.textContent = label + ": ";
+                line.append(bold, document.createTextNode(value));
+                content.append(line);
+            }
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "popup-edit";
+            editButton.textContent = "Update info";
+            editButton.addEventListener("click", () => openHouseForm(house, index));
+            content.append(editButton);
+            marker.bindPopup(content);
+            return marker;
+        }
 
-                const blob = new Blob([csv], {
-                    type: "text/csv"
-                });
+        function refreshPins() {
+            houseMarkers.forEach(marker => map.removeLayer(marker));
+            houseMarkers = savedPins.map(displayPin);
+        }
+        refreshPins();
 
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
+        // A translucent candy corn follows the mouse BEFORE the user clicks.
+        // It starts in the center of the map so it is visible immediately.
+        function startPlacement() {
+            placingPin = true;
+            placePinButton.textContent = "Cancel Placement";
+            pinMessage.textContent = "Move the candy corn over your house, then click the map.";
+            previewMarker = L.marker(map.getCenter(), {
+                icon: candyCornIcon,
+                opacity: 0.7,
+                interactive: false,
+                keyboard: false
+            }).addTo(map);
+            map.getContainer().classList.add("placing-pin");
+        }
 
-                link.href = url;
-                link.download = "trackyourtreat-pins.csv";
-                link.click();
+        function resetPlacement() {
+            placingPin = false;
+            placePinButton.textContent = "Place Pin";
+            map.getContainer().classList.remove("placing-pin");
+            if (previewMarker) {
+                map.removeLayer(previewMarker);
+                previewMarker = null;
+            }
+        }
 
-                URL.revokeObjectURL(url);
-            });
+        placePinButton.addEventListener("click", function() {
+            if (placingPin) {
+                resetPlacement();
+                pinMessage.textContent = "";
+            } else {
+                startPlacement();
+            }
+        });
 
+        map.on("mousemove", function(event) {
+            if (placingPin && previewMarker) previewMarker.setLatLng(event.latlng);
+        });
+
+        // The candy corn stays visible behind the form until saved or canceled.
+        map.on("click", function(event) {
+            if (!placingPin) return;
+            const { lat, lng } = event.latlng;
+            previewMarker.setLatLng([lat, lng]);
+            previewMarker.setOpacity(1);
+            placingPin = false;
+            map.getContainer().classList.remove("placing-pin");
+            openHouseForm({ lat, lng });
+        });
+
+        function closeHouseForm() {
+            addressRequestNumber++; // Ignore a lookup that finishes after cancellation.
+            houseDialog.close();
+            resetPlacement();
+            pendingLocation = null;
+            editingIndex = null;
+            formMessage.textContent = "";
+            pinMessage.textContent = "";
+        }
+
+        // Reverse geocode coordinates, but NEVER overwrite an address the user typed.
+        // Public Nominatim may return an approximate address, so the field remains editable.
+        async function suggestAddress(lat, lng, requestNumber) {
+            const fallback = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            addressHint.textContent = "Looking up the address… You can type your own.";
+            try {
+                const url = "https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1" +
+                    "&lat=" + encodeURIComponent(lat) + "&lon=" + encodeURIComponent(lng);
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Address lookup failed");
+                const result = await response.json();
+                if (requestNumber !== addressRequestNumber) return;
+                const suggested = result.display_name || fallback;
+                if (houseAddress.value === fallback) houseAddress.value = suggested;
+                addressHint.textContent = result.display_name
+                    ? "Suggested from the map."
+                    : "Exact address not found. Enter the street address if needed.";
+            } catch (error) {
+                if (requestNumber !== addressRequestNumber) return;
+                addressHint.textContent = "Address lookup unavailable. Enter or edit the address manually.";
+            }
+        }
+
+        function openHouseForm(house, index = null) {
+            houseForm.reset();
+            pendingLocation = { lat: house.lat, lng: house.lng };
+            editingIndex = index;
+            const isNew = index === null;
+            const coordinates = `${house.lat.toFixed(6)}, ${house.lng.toFixed(6)}`;
+            houseAddress.value = house.address || coordinates;
+            addressHint.textContent = isNew ? "Looking up the address…" : "You can edit the saved address.";
+            pinCoordinates.textContent = "Pin coordinates: " + coordinates;
+            candyStatus.value = house.status || "Handing out candy";
+            houseComments.value = house.comments || "";
+            document.getElementById("houseDialogTitle").textContent =
+                isNew ? "Add a house 🎃" : "Update house info 🎃";
+            saveHouseButton.textContent = isNew ? "Save house" : "Save changes";
+            formMessage.textContent = "";
+            houseDialog.showModal();
+            houseAddress.focus();
+            addressRequestNumber++;
+            if (isNew) suggestAddress(house.lat, house.lng, addressRequestNumber);
+        }
+
+        houseForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            if (!pendingLocation || !houseForm.reportValidity()) return;
+            const house = {
+                ...pendingLocation,
+                address: houseAddress.value.trim(),
+                status: candyStatus.value,
+                comments: houseComments.value.trim()
+            };
+            if (!house.address) {
+                formMessage.textContent = "Please enter an address.";
+                return;
+            }
+            const wasEditing = editingIndex !== null;
+            saveHouseButton.disabled = true;
+            formMessage.textContent = "Saving…";
+            try {
+                savedPins = await saveHouseData(house, editingIndex);
+                refreshPins();
+                addressRequestNumber++;
+                houseDialog.close();
+                resetPlacement();
+                pendingLocation = null;
+                editingIndex = null;
+                pinMessage.textContent = wasEditing ? "House updated!" : "House saved!";
+            } catch (error) {
+                formMessage.textContent = "Could not save. Please try again.";
+            } finally {
+                saveHouseButton.disabled = false;
+            }
+        });
+        document.getElementById("cancelHouse").addEventListener("click", closeHouseForm);
+        document.getElementById("closeHouseDialog").addEventListener("click", closeHouseForm);
+        houseDialog.addEventListener("cancel", function(event) {
+            event.preventDefault();
+            closeHouseForm();
+        });
+
+        // Existing Find My Location button.
+        document.getElementById("myLocationButton").addEventListener("click", function() {
+            if (!navigator.geolocation) {
+                pinMessage.textContent = "Geolocation is not supported.";
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                position => map.setView([position.coords.latitude, position.coords.longitude], 16),
+                () => { pinMessage.textContent = "Unable to access your location."; }
+            );
+        });
+
+        // Existing CSV export (including form data).
+        document.getElementById("exportButton").addEventListener("click", function() {
+            const columns = ["latitude", "longitude", "address", "status", "comments"];
+            function cell(value) {
+                return '"' + String(value ?? "").replace(/"/g, '""') + '"';
+            }
+            const csv = [columns.join(","), ...savedPins.map(house => [
+                house.lat, house.lng, house.address, house.status, house.comments
+            ].map(cell).join(","))].join("\n") + "\n";
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "trackyourtreat-pins.csv";
+            link.click();
+            URL.revokeObjectURL(url);
+        });
     </script>
-
 </body>
 </html>
