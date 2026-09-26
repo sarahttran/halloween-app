@@ -1,10 +1,17 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrackYourTreat</title>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
     <!-- Leaflet CSS -->
     <link
@@ -13,45 +20,794 @@
     >
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
+
+        /* =====================================
+            THEME VARIABLES
+           ===================================== */
+
+        :root {
+            --background: #fff8f0;
+            --purple: #65428a;
+            --dark-purple: #38234f;
+            --light-purple: #f0e3ff;
+
+            --orange: #ffae57;
+            --orange-dark: #e9872b;
+
+            --pink: #ffd9eb;
+            --green: #d8f3da;
+
+            --white: #ffffff;
+            --text: #38234f;
+            --muted: #776a80;
+            --border: #e9def0;
+
+            --shadow: 0 8px 25px rgba(56, 35, 79, 0.10);
         }
+
+        /* =====================================
+        GENERAL STYLING
+           ===================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 100px;
+        }
+
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+            font-family: "Nunito", Arial, sans-serif;
+        }
+
+        h1, h2, h3 {
+            font-family: "Baloo 2", sans-serif;
+        }
+
+        button, input {
+            font-family: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .container {
+            width: min(1150px, 92%);
+            margin: auto;
+        }
+
+        /* =====================================
+            NAVBAR
+           ===================================== */
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+
+            background: var(--white);
+            border-bottom: 2px solid var(--border);
+            box-shadow: 0 3px 12px rgba(56, 35, 79, 0.05);
+        }
+
+        .nav-content {
+            min-height: 75px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .logo {
+            color: var(--purple);
+            font-family: "Baloo 2", sans-serif;
+            font-weight: 800;
+            font-size: 27px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links a {
+            color: var(--dark-purple);
+            text-decoration: none;
+            font-weight: 800;
+
+            padding: 9px 18px;
+            border-radius: 30px;
+
+            transition: 0.2s;
+        }
+
+        .nav-links a:hover {
+            background: var(--light-purple);
+        }
+
+        .nav-links .nav-button {
+            background: var(--purple);
+            color: var(--white);
+        }
+
+        .nav-links .nav-button:hover {
+            background: var(--dark-purple);
+        }
+
+        /* =====================================
+            WELCOME SECTION
+           ===================================== */
+
+        .hero {
+            padding: 32px 0 24px;
+        }
+
+        .hero-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+
+            min-height: 255px;
+            padding: 30px 45px;
+
+            background: var(--light-purple);
+            border: 3px solid var(--purple);
+            border-radius: 35px;
+
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .hero-text {
+            max-width: 620px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            padding: 6px 15px;
+
+            background: var(--white);
+            border-radius: 30px;
+
+            color: var(--purple);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .hero h1 {
+            margin: 12px 0;
+            font-size: clamp(35px, 5vw, 57px);
+            line-height: 1.05;
+        }
+
+        .hero h1 span {
+            color: var(--orange-dark);
+        }
+
+        .hero p {
+            max-width: 560px;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0 0 22px;
+        }
+
+        .hero-image {
+            position: relative;
+
+            min-width: 215px;
+            height: 200px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background: var(--green);
+            border-radius: 50%;
+        }
+
+        .hero-image .pumpkin {
+            font-size: 110px;
+            line-height: 1;
+        }
+
+        .hero-image .ghost {
+            position: absolute;
+            top: -10px;
+            right: -12px;
+            font-size: 46px;
+        }
+
+        .hero-image .candy {
+            position: absolute;
+            bottom: -5px;
+            left: -15px;
+            font-size: 42px;
+        }
+
+        /* =====================================
+            BUBBLY BUTTONS
+           ===================================== */
+
+        .button {
+            display: inline-block;
+
+            padding: 12px 23px;
+            border: none;
+            border-radius: 30px;
+
+            font-size: 15px;
+            font-weight: 800;
+            text-decoration: none;
+
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+        }
+
+        .button-orange {
+            background: var(--orange);
+            color: var(--dark-purple);
+            box-shadow: 0 5px 0 var(--orange-dark);
+        }
+
+        .button-purple {
+            background: var(--purple);
+            color: var(--white);
+        }
+
+        .button-white {
+            background: var(--white);
+            color: var(--purple);
+            border: 2px solid var(--border);
+        }
+
+        /* =====================================
+            MAP SECTION
+           ===================================== */
+
+        .map-section {
+            padding: 10px 0 45px;
+        }
+
+        .section-heading {
+            margin-bottom: 20px;
+        }
+
+        .section-heading h2 {
+            font-size: 36px;
+            margin: 0;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .map-card {
+            background: var(--white);
+
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 28px;
+
+            box-shadow: var(--shadow);
+        }
+
+        /* Search bar */
+
+        #searchForm {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 13px;
+        }
+
+        #searchInput {
+            flex: 1;
+            min-width: 0;
+
+            padding: 13px 18px;
+
+            border: 2px solid var(--border);
+            border-radius: 30px;
+
+            font-size: 15px;
+            outline: none;
+        }
+
+        #searchInput:focus {
+            border-color: var(--purple);
+        }
+
+        #searchForm button {
+            padding: 12px 25px;
+
+            border: none;
+            border-radius: 30px;
+
+            background: var(--purple);
+            color: var(--white);
+
+            font-weight: 800;
+        }
+
+        #searchMessage {
+            margin: 8px 0;
+            font-size: 13px;
+            color: var(--purple);
+            overflow-wrap: anywhere;
+        }
+
+        #searchMessage:empty,
+        #pinMessage:empty {
+            display: none;
+        }
+
+        /* Existing pin controls */
+
+        .pin-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+
+            margin: 15px 0;
+        }
+
+        .pin-controls button {
+            padding: 11px 19px;
+
+            border: none;
+            border-radius: 30px;
+
+            font-size: 14px;
+            font-weight: 800;
+
+            transition: 0.2s;
+        }
+
+        .pin-controls button:hover {
+            transform: translateY(-2px);
+        }
+
+        #placePinButton {
+            background: var(--orange);
+            color: var(--dark-purple);
+        }
+
+        #myLocationButton {
+            background: var(--light-purple);
+            color: var(--purple);
+        }
+
+        #exportButton {
+            background: var(--green);
+            color: var(--dark-purple);
+        }
+
+        #pinMessage {
+            margin: 10px 0;
+            color: var(--purple);
+            font-weight: 800;
+        }
+
+        /* Existing Leaflet map */
 
         #map {
             height: 500px;
             width: 100%;
-            border-radius: 10px;
+
+            border: 2px solid var(--border);
+            border-radius: 20px;
+
+            z-index: 1;
         }
+
+        .map-footer {
+            padding: 12px 5px 0;
+
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* =====================================
+            HOW IT WORKS
+           ===================================== */
+
+        .how-section {
+            padding: 0 0 55px;
+        }
+
+        .how-section h2 {
+            font-size: 35px;
+            margin: 0 0 18px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .step-card {
+            padding: 25px;
+
+            background: var(--white);
+            border: 2px solid var(--border);
+            border-radius: 25px;
+
+            box-shadow: var(--shadow);
+        }
+
+        .step-card:nth-child(2) {
+            background: var(--pink);
+        }
+
+        .step-card:nth-child(3) {
+            background: var(--green);
+        }
+
+        .step-icon {
+            font-size: 36px;
+        }
+
+        .step-card h3 {
+            font-size: 23px;
+            margin: 8px 0;
+        }
+
+        .step-card p {
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* =====================================
+            FOOTER
+           ===================================== */
+
+        footer {
+            padding: 26px 15px;
+
+            background: var(--light-purple);
+            text-align: center;
+
+            color: var(--purple);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        /* =====================================
+            MOBILE RESPONSIVENESS
+           ===================================== */
+
+        @media (max-width: 800px) {
+
+            .nav-content {
+                flex-direction: column;
+                gap: 0;
+                padding: 12px 0;
+            }
+
+            .nav-links {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .nav-links a {
+                padding: 7px 12px;
+                font-size: 13px;
+            }
+
+            .hero-card {
+                padding: 25px;
+            }
+
+            .hero-image {
+                min-width: 140px;
+                height: 140px;
+            }
+
+            .hero-image .pumpkin {
+                font-size: 75px;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                height: 420px;
+            }
+        }
+
+        @media (max-width: 550px) {
+
+            .hero-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hero-image {
+                display: none;
+            }
+
+            .section-heading h2 {
+                font-size: 29px;
+            }
+
+            .map-card {
+                padding: 12px;
+            }
+
+            #searchForm {
+                flex-direction: column;
+            }
+
+            .pin-controls button {
+                flex: 1;
+            }
+
+            #map {
+                height: 350px;
+            }
+        }
+
     </style>
 </head>
 
 <body>
-    <h1 id="test" class="test2">TrackYourTreat</h1>
-    <p>Find participating houses in your neighborhood!</p>
 
-    
-<form id="searchForm">
-    <input
-        id="searchInput"
-        type="search"
-        placeholder="Search a neighborhood or ZIP code"
-        required
-    >
-    <button type="submit">Search</button>
-</form>
+    <!-- =====================================
+        NAVBAR
+        ===================================== -->
 
-<p id="searchMessage" role="status"></p>
+    <header class="navbar">
+        <div class="container nav-content">
 
-    <!-- This is where the map appears -->
-    <div id="map"></div>
+            <a href="#home" class="logo">
+                🎃 TrackYourTreat
+            </a>
+
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="#home">Home</a>
+                <a href="#map-section">Map</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#map-section" class="nav-button">
+                    🍬 View Map
+                </a>
+            </nav>
+
+        </div>
+    </header>
+
+
+    <!-- =====================================
+        HOMEPAGE WELCOME
+        ===================================== -->
+
+    <section class="hero" id="home">
+        <div class="container">
+
+            <div class="hero-card">
+
+                <div class="hero-text">
+
+                    <span class="hero-label">
+                        YOUR NEIGHBORHOOD FRIEND
+                    </span>
+
+                    <h1>
+                        Less searching.<br>
+                        <span>More treating!</span>
+                    </h1>
+
+                    <p>
+                        Find participating houses in your
+                        neighborhood! Explore the map,
+                        discover treats, or add your own
+                        house for Halloween.
+                    </p>
+
+                    <a
+                        href="#map-section"
+                        class="button button-orange"
+                    >
+                        🍬 View Map ↓
+                    </a>
+
+                </div>
+
+                <div class="hero-image" aria-hidden="true">
+                    <span class="pumpkin">🎃</span>
+                    <span class="ghost">👻</span>
+                    <span class="candy">🍬</span>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- =====================================
+         MAP SECTION
+         ===================================== -->
+
+    <section class="map-section" id="map-section">
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <h2>Find your next sweet stop! 🍭</h2>
+
+                <p>
+                    Explore the neighborhood or add
+                    a pin to the map.
+                </p>
+
+            </div>
+
+
+            <div class="map-card">
+
+                <!-- Neighborhood search -->
+
+                <form id="searchForm">
+
+                    <input
+                        id="searchInput"
+                        type="search"
+                        placeholder="Search a neighborhood or ZIP code"
+                        aria-label="Neighborhood or ZIP code"
+                        required
+                    >
+
+                    <button type="submit">
+                        Search
+                    </button>
+
+                </form>
+
+                <p id="searchMessage" role="status"></p>
+
+
+                <!-- Your original pin controls -->
+
+                <div class="pin-controls">
+
+                    <button
+                        id="placePinButton"
+                        type="button"
+                    >
+                        📍 Place Pin
+                    </button>
+
+                    <button
+                        id="myLocationButton"
+                        type="button"
+                    >
+                        🎯 Find My Location
+                    </button>
+
+                    <button
+                        id="exportButton"
+                        type="button"
+                    >
+                        📁 Export CSV
+                    </button>
+
+                </div>
+
+                <p id="pinMessage" role="status"></p>
+
+
+                <!-- Your existing map -->
+
+                <div id="map"></div>
+
+
+                <div class="map-footer">
+                    Click Place Pin, then click a
+                    location on the map to save it.
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         HOW IT WORKS
+         ===================================== -->
+
+    <section class="how-section" id="how-it-works">
+
+        <div class="container">
+
+            <h2>How it works ✨</h2>
+
+            <div class="steps">
+
+                <div class="step-card">
+
+                    <div class="step-icon">🗺️</div>
+
+                    <h3>Explore the map</h3>
+
+                    <p>
+                        Search your neighborhood and
+                        see participating houses.
+                    </p>
+
+                </div>
+
+
+                <div class="step-card">
+
+                    <div class="step-icon">🏠</div>
+
+                    <h3>Add your house</h3>
+
+                    <p>
+                        Place a pin to share your
+                        Halloween location.
+                    </p>
+
+                </div>
+
+
+                <div class="step-card">
+
+                    <div class="step-icon">🍫</div>
+
+                    <h3>Find the treats</h3>
+
+                    <p>
+                        Explore the map and discover
+                        your next trick-or-treat stop!
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+
+    <footer>
+        🎃 TrackYourTreat — Made for a sweeter Halloween!
+    </footer>
+
+
+    <!-- =====================================
+         YOUR EXISTING JAVASCRIPT
+         ===================================== -->
 
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    
     <script>
+
         // Create a map centered near UMBC
         const map = L.map("map").setView(
             [39.254, -76.714],
@@ -77,54 +833,228 @@
                 "Hours: 6 PM - 9 PM"
             );
 
-        
-        // Neighborhood search
-        const searchForm = document.getElementById("searchForm");
-        const searchInput = document.getElementById("searchInput");
-        const searchMessage = document.getElementById("searchMessage");
 
-        searchForm.addEventListener("submit", async function(event) {
-            event.preventDefault();
+        // =====================================
+        // NEIGHBORHOOD SEARCH
+        // =====================================
 
-            const location = searchInput.value.trim();
-            if (!location) return;
+        const searchForm =
+            document.getElementById("searchForm");
 
-            searchMessage.textContent = "Searching...";
+        const searchInput =
+            document.getElementById("searchInput");
 
-            try {
-                const url =
-                    "https://nominatim.openstreetmap.org/search" +
-                    "?format=json&limit=1&q=" +
-                    encodeURIComponent(location);
+        const searchMessage =
+            document.getElementById("searchMessage");
 
-                const response = await fetch(url);
+        searchForm.addEventListener(
+            "submit",
+            async function(event) {
 
-                if (!response.ok) {
-                    throw new Error("Search request failed");
+                event.preventDefault();
+
+                const location = searchInput.value.trim();
+
+                if (!location) return;
+
+                searchMessage.textContent = "Searching...";
+
+                try {
+
+                    const url =
+                        "https://nominatim.openstreetmap.org/search" +
+                        "?format=json&limit=1&q=" +
+                        encodeURIComponent(location);
+
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        throw new Error("Search request failed");
+                    }
+
+                    const results = await response.json();
+
+                    if (results.length === 0) {
+                        searchMessage.textContent =
+                            "Location not found.";
+                        return;
+                    }
+
+                    const result = results[0];
+
+                    map.setView(
+                        [Number(result.lat), Number(result.lon)],
+                        14
+                    );
+
+                    searchMessage.textContent =
+                        result.display_name;
+
+                } catch (error) {
+
+                    searchMessage.textContent =
+                        "Search unavailable. Please try again.";
+
                 }
+            }
+        );
 
-                const results = await response.json();
 
-                if (results.length === 0) {
-                    searchMessage.textContent = "Location not found.";
+        // =====================================
+        // PIN FUNCTIONALITY
+        // =====================================
+
+        // Save and load pins
+        const STORAGE_KEY = "trackYourTreatPins";
+
+        let savedPins = JSON.parse(
+            localStorage.getItem(STORAGE_KEY) || "[]"
+        );
+
+        let placingPin = false;
+
+        const placePinButton =
+            document.getElementById("placePinButton");
+
+        const pinMessage =
+            document.getElementById("pinMessage");
+
+
+        // Display a pin on the map
+        function displayPin(pin) {
+
+            L.marker([pin.lat, pin.lng])
+                .addTo(map)
+                .bindPopup("Saved Halloween location");
+
+        }
+
+
+        // Restore pins when the website reloads
+        savedPins.forEach(displayPin);
+
+
+        // Activate pin placement
+        placePinButton.addEventListener(
+            "click",
+            function() {
+
+                placingPin = !placingPin;
+
+                placePinButton.textContent = placingPin
+                    ? "Cancel Placement"
+                    : "📍 Place Pin";
+
+                pinMessage.textContent = placingPin
+                    ? "Click the map to place your pin."
+                    : "";
+
+            }
+        );
+
+
+        // Save the location when the map is clicked
+        map.on("click", function(event) {
+
+            if (!placingPin) return;
+
+            const pin = {
+                lat: event.latlng.lat,
+                lng: event.latlng.lng
+            };
+
+            savedPins.push(pin);
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(savedPins)
+            );
+
+            displayPin(pin);
+
+            placingPin = false;
+
+            placePinButton.textContent = "📍 Place Pin";
+
+            pinMessage.textContent = "Pin saved!";
+
+        });
+
+
+        // =====================================
+        // FIND MY LOCATION
+        // =====================================
+
+        document.getElementById("myLocationButton")
+            .addEventListener("click", function() {
+
+                if (!navigator.geolocation) {
+
+                    pinMessage.textContent =
+                        "Geolocation is not supported.";
+
                     return;
                 }
 
-                const result = results[0];
+                navigator.geolocation.getCurrentPosition(
 
-                map.setView(
-                    [Number(result.lat), Number(result.lon)],
-                    14
+                    function(position) {
+
+                        map.setView(
+                            [
+                                position.coords.latitude,
+                                position.coords.longitude
+                            ],
+                            16
+                        );
+
+                    },
+
+                    function() {
+
+                        pinMessage.textContent =
+                            "Unable to access your location.";
+
+                    }
+
                 );
 
-                searchMessage.textContent = result.display_name;
+            });
 
-            } catch (error) {
-                searchMessage.textContent =
-                    "Search unavailable. Please try again.";
-            }
-        });
+
+        // =====================================
+        // EXPORT CSV
+        // =====================================
+
+        document.getElementById("exportButton")
+            .addEventListener("click", function() {
+
+                let csv = "latitude,longitude\n";
+
+                savedPins.forEach(function(pin) {
+
+                    csv += pin.lat + "," + pin.lng + "\n";
+
+                });
+
+                const blob = new Blob([csv], {
+                    type: "text/csv"
+                });
+
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement("a");
+
+                link.href = url;
+                link.download = "trackyourtreat-pins.csv";
+
+                link.click();
+
+                URL.revokeObjectURL(url);
+
+            });
 
     </script>
+
 </body>
 </html>
