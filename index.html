@@ -31,12 +31,26 @@
     <h1 id="test" class="test2">TrackYourTreat</h1>
     <p>Find participating houses in your neighborhood!</p>
 
+    
+<form id="searchForm">
+    <input
+        id="searchInput"
+        type="search"
+        placeholder="Search a neighborhood or ZIP code"
+        required
+    >
+    <button type="submit">Search</button>
+</form>
+
+<p id="searchMessage" role="status"></p>
+
     <!-- This is where the map appears -->
     <div id="map"></div>
 
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    
     <script>
         // Create a map centered near UMBC
         const map = L.map("map").setView(
@@ -62,6 +76,55 @@
                 "Candy: Chocolate and gummies<br>" +
                 "Hours: 6 PM - 9 PM"
             );
+
+        
+        // Neighborhood search
+        const searchForm = document.getElementById("searchForm");
+        const searchInput = document.getElementById("searchInput");
+        const searchMessage = document.getElementById("searchMessage");
+
+        searchForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const location = searchInput.value.trim();
+            if (!location) return;
+
+            searchMessage.textContent = "Searching...";
+
+            try {
+                const url =
+                    "https://nominatim.openstreetmap.org/search" +
+                    "?format=json&limit=1&q=" +
+                    encodeURIComponent(location);
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error("Search request failed");
+                }
+
+                const results = await response.json();
+
+                if (results.length === 0) {
+                    searchMessage.textContent = "Location not found.";
+                    return;
+                }
+
+                const result = results[0];
+
+                map.setView(
+                    [Number(result.lat), Number(result.lon)],
+                    14
+                );
+
+                searchMessage.textContent = result.display_name;
+
+            } catch (error) {
+                searchMessage.textContent =
+                    "Search unavailable. Please try again.";
+            }
+        });
+
     </script>
 </body>
 </html>
