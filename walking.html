@@ -349,7 +349,8 @@ function groundPinImage(kind) {
     ctx.lineTo(59,50); ctx.lineTo(50,44); ctx.fill();
     ctx.fillStyle = "#e97e2d"; ctx.fillRect(38,33,4,14);
   }
-  return canvas;
+  // MapLibre accepts ImageData, not an HTMLCanvasElement.
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 function setupGroundPins() {
@@ -402,6 +403,7 @@ function refreshMarkers() {
 function clickedGroundPin(clientX, clientY) {
   const rect = map.getCanvas().getBoundingClientRect();
   const point = [clientX - rect.left, clientY - rect.top];
+  if (!map.getLayer("community-pins-ground")) return false;
   const hits = map.queryRenderedFeatures(point,{layers:["community-pins-ground"]});
   if (!hits.length) return false;
   const house = pinCatalog[hits[0].properties.index];
@@ -944,9 +946,14 @@ map = new maplibregl.Map({
 
 map.on("load", async () => {
   setupLayers();
-  setupGroundPins();
+  try {
+    setupGroundPins();
+    refreshMarkers();
+  } catch (error) {
+    console.error("Ground pin layer could not initialize:", error);
+    // Keep GPS, buildings and the character running even if pins fail.
+  }
   setupMapGestures();
-  refreshMarkers();
 
   avatarMarker = new maplibregl.Marker({
     element: buildAvatarElement(),
