@@ -58,7 +58,6 @@
                 <div class="pin-controls">
                     <button id="placePinButton" type="button">Place Pin</button>
                     <button id="myLocationButton" type="button">Find My Location</button>
-                    <button id="exportButton" type="button">Export CSV</button>
                 </div>
                 <p id="pinMessage" role="status"></p>
 
@@ -146,6 +145,37 @@
 
         // Map setup
         const map = L.map("map").setView([39.254, -76.714], 18);
+        // Start with a fallback map of the United States
+// Keep track of the visitor's location pin
+let userLocationMarker = null;
+
+// Automatically find the visitor's location
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            // Add a blue pin at the visitor's location
+            userLocationMarker = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup("You Are Here!");
+
+            // Smoothly fly to their location
+            map.flyTo([lat, lng], 18, {
+                animate: true,
+                duration: 1.5
+            });
+        },
+        function(error) {
+            console.log("Location unavailable:", error.message);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000
+        }
+    );
+}
         // Keep track of the searched location
         let searchMarker = null;
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -472,24 +502,69 @@
                 () => { pinMessage.textContent = "Unable to access your location."; }
             );
         });
-
-        // Existing CSV export (including form data).
-        document.getElementById("exportButton").addEventListener("click", function() {
-            const columns = ["latitude", "longitude", "address", "status", "comments"];
-            function cell(value) {
-                return '"' + String(value ?? "").replace(/"/g, '""') + '"';
-            }
-            const csv = [columns.join(","), ...savedPins.map(house => [
-                house.lat, house.lng, house.address, house.status, house.comments
-            ].map(cell).join(","))].join("\n") + "\n";
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "trackyourtreat-pins.csv";
-            link.click();
-            URL.revokeObjectURL(url);
-        });
     </script>
+
+    
+<!-- Halloween Safety Warning -->
+<dialog id="safetyDialog" class="safety-dialog"
+        aria-labelledby="safetyTitle">
+
+    <div class="safety-content">
+        <div class="safety-pumpkin"></div>
+
+        <h2 id="safetyTitle">Stay Spooky, Stay Safe!</h2>
+
+        <p>
+            Heading out to collect treats? Remember:
+        </p>
+
+        <ul>
+            <li>
+                Under 18? Explore with a parent
+                or trusted adult.
+            </li>
+            <li>
+                Stay on sidewalks and watch for cars.
+            </li>
+            <li>
+                Never enter a stranger's home or vehicle.
+            </li>
+            <li>
+                Don't share your live location or personal
+                information with strangers.
+            </li>
+            <li>
+                Map pins are community-submitted and may
+                not be verified. Check before visiting.
+            </li>
+        </ul>
+
+        <button id="closeSafetyDialog" type="button">
+            Got it! Let's explore 🍬
+        </button>
+    </div>
+
+</dialog>
+
+
+<script>
+    const safetyDialog =
+        document.getElementById("safetyDialog");
+
+    const closeSafetyButton =
+        document.getElementById("closeSafetyDialog");
+
+    // Show the warning once per browser session.
+    if (!sessionStorage.getItem("safetyAcknowledged")) {
+        safetyDialog.showModal();
+    }
+
+    // Close the warning when the button is clicked.
+    closeSafetyButton.addEventListener("click", function() {
+        sessionStorage.setItem("safetyAcknowledged", "true");
+        safetyDialog.close();
+    });
+</script>
+
 </body>
 </html>
