@@ -79,29 +79,26 @@ button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
     radial-gradient(circle at 50% 43%, transparent 38%, rgba(19,10,34,.11) 74%, rgba(19,10,34,.2) 100%);
 }
 
-/* Only two camera buttons */
-.camera-tools{
-  position:absolute;
-  z-index:20;
-  right:14px;
-  bottom:max(46px, env(safe-area-inset-bottom));
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+/* Map gestures are handled directly on the canvas. */
+#map .maplibregl-canvas { touch-action: none; cursor: grab; }
+#map .maplibregl-canvas:active { cursor: grabbing; }
+
+/* Tiny context menu used only while placing a pin. */
+.pin-picker {
+  position: absolute; z-index: 30; display: none;
+  min-width: 154px; transform: translate(-50%, calc(-100% - 14px));
+  padding: 9px; border-radius: 15px; background: rgba(255,248,238,.98);
+  border: 1px solid #fff; box-shadow: 0 10px 28px #1d113355;
+  color: #4d306f; text-align:center;
 }
-.camera-tools button{
-  width:42px;
-  height:42px;
-  border:1.5px solid rgba(255,255,255,.72);
-  border-radius:16px;
-  background:rgba(255,248,238,.82);
-  color:#5f3e82;
-  box-shadow:0 8px 18px rgba(25,10,50,.16);
-  backdrop-filter:blur(9px);
-  font-size:18px;
-  display:grid;
-  place-items:center;
-}
+.pin-picker.show { display: block; }
+.pin-picker .picker-title { font-size: 12px; font-weight: 800; margin-bottom: 6px; }
+.pin-picker .picker-actions { display: flex; gap: 8px; justify-content: center; }
+.pin-picker button { min-width: 52px; height: 43px; font-size: 23px; border: 1px solid #e8d8ee;
+  border-radius: 11px; background: #fff; }
+.pin-picker button:hover, .pin-picker button:focus-visible { background: #f1e7f7; }
+.pin-picker .picker-cancel { margin-top: 5px; border:0; background:transparent;
+  font-size:11px; height: auto; color: #73578d; }
 
 /* Transparent attribution in the corner */
 .attribution{
@@ -119,164 +116,36 @@ button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
 }
 .attribution a{color:rgba(94,66,130,.72)}
 
-/* Player avatar */
-.avatar-marker{
-  width:90px;
-  height:156px;
-  pointer-events:none;
-  filter:drop-shadow(0 12px 8px rgba(27,15,45,.28));
-}
-.avatar-marker .ring{
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:0;
-  margin:auto;
-  width:86px;
-  height:28px;
-  border-radius:50%;
-  background:rgba(163,235,255,.14);
-  border:2px solid rgba(255,255,255,.5);
-  box-shadow:0 0 0 10px rgba(163,235,255,.08);
-}
-.avatar-marker .body{
-  position:absolute;
-  left:11px;
-  bottom:8px;
-  width:68px;
-  height:126px;
-  transform-origin:50% 100%;
-  animation:bob .9s ease-in-out infinite alternate;
-}
-.avatar-marker.idle .body{animation-duration:2.3s}
-.avatar-marker .hatCone{
-  position:absolute;
-  top:-20px;
-  left:17px;
-  width:38px;
-  height:44px;
-  background:#68458a;
-  clip-path:polygon(45% 0,100% 100%,0 100%);
-  transform:rotate(2deg);
-}
-.avatar-marker .hatBrim{
-  position:absolute;
-  top:12px;
-  left:6px;
-  width:58px;
-  height:14px;
-  border-radius:40px;
-  background:#59387a;
-  box-shadow:0 4px 0 #321f49;
-}
-.avatar-marker .hatBand{
-  position:absolute;
-  top:7px;
-  left:18px;
-  width:35px;
-  height:7px;
-  border-radius:9px;
-  background:#ffae42;
-  transform:rotate(-6deg);
-}
-.avatar-marker .hair{
-  position:absolute;
-  left:13px;
-  top:25px;
-  width:43px;
-  height:44px;
-  border-radius:18px 18px 22px 22px;
-  background:#69462f;
-}
-.avatar-marker .face{
-  position:absolute;
-  left:16px;
-  top:30px;
-  width:39px;
-  height:37px;
-  border-radius:46%;
-  background:#ffd2a6;
-  border:2px solid #e7ab87;
-}
-.avatar-marker .face:before,
-.avatar-marker .face:after{
-  content:"";
-  position:absolute;
-  top:16px;
-  width:4px;
-  height:5px;
-  border-radius:50%;
-  background:#4a3640;
-}
-.avatar-marker .face:before{left:9px}
-.avatar-marker .face:after{right:9px}
-.avatar-marker .smile{
-  position:absolute;
-  top:55px;
-  left:31px;
-  width:9px;
-  height:5px;
-  border-bottom:2px solid #9c5d5a;
-  border-radius:0 0 8px 8px;
-}
-.avatar-marker .shirt{
-  position:absolute;
-  left:16px;
-  top:68px;
-  width:40px;
-  height:38px;
-  border-radius:14px 14px 7px 7px;
-  background:#ef8f45;
-  border:3px solid #70488b;
-  box-shadow:inset 0 0 0 6px #f4b467;
-}
-.avatar-marker .arm{
-  position:absolute;
-  top:77px;
-  width:14px;
-  height:31px;
-  border-radius:9px;
-  background:#ffd2a6;
-  border-top:14px solid #7450a0;
-  transform-origin:top;
-}
-.avatar-marker .arm.left{
-  left:4px;
-  animation:swing .7s infinite alternate;
-}
-.avatar-marker .arm.right{
-  right:4px;
-  animation:swing .7s infinite alternate-reverse;
-}
-.avatar-marker .leg{
-  position:absolute;
-  top:98px;
-  width:14px;
-  height:25px;
-  border-radius:6px;
-  background:#4e456f;
-  transform-origin:top;
-  animation:step .7s infinite alternate;
-}
-.avatar-marker .leg.left{left:20px}
-.avatar-marker .leg.right{
-  right:18px;
-  animation-direction:alternate-reverse;
-}
-.avatar-marker .shoe{
-  position:absolute;
-  bottom:-4px;
-  width:21px;
-  height:9px;
-  left:-3px;
-  border-radius:8px;
-  background:#fff8e8;
-}
-.avatar-marker.idle .arm,
-.avatar-marker.idle .leg{animation-play-state:paused}
-@keyframes step{from{transform:rotate(-18deg)}to{transform:rotate(22deg)}}
-@keyframes swing{from{transform:rotate(-18deg)}to{transform:rotate(24deg)}}
-@keyframes bob{to{transform:translateY(-4px)}}
+/* One-day-game style: six simple CSS shapes and a pumpkin head. */
+.avatar-marker { position: relative; width: 52px; height: 92px; pointer-events: none;
+  filter: drop-shadow(1px 3px 1px #24142c66); }
+.avatar-marker .stickman { position:absolute; inset:0; transform-origin:50% 83%; }
+.avatar-marker .head { position:absolute; left:13px; top:2px; width:28px; height:28px;
+  background:#ee8c28; border:2px solid #563127; border-radius:43% 43% 45% 45%; }
+.avatar-marker .head:before { content:''; position:absolute; width:5px; height:8px;
+  background:#456336; left:10px; top:-8px; transform:rotate(-15deg); }
+.avatar-marker .eyes { position:absolute; left:5px; top:10px; width:5px; height:5px;
+  background:#281a24; box-shadow: 11px 0 #281a24; clip-path:polygon(50% 0,100% 100%,0 100%); }
+.avatar-marker .mouth { position:absolute; width:9px; height:4px; left:8px; top:20px;
+  border-bottom:2px solid #281a24; }
+.avatar-marker .torso { position:absolute; top:30px; left:25px; width:3px; height:29px;
+  background:#211a2b; border-radius:3px; }
+.avatar-marker .arm, .avatar-marker .leg { position:absolute; width:3px;
+  background:#211a2b; border-radius:3px; transform-origin:top center; }
+.avatar-marker .arm { height:24px; top:34px; }
+.avatar-marker .arm.left { left:25px; transform:rotate(50deg); }
+.avatar-marker .arm.right { left:26px; transform:rotate(-50deg); }
+.avatar-marker .leg { top:57px; height:30px; }
+.avatar-marker .leg.left { left:25px; transform:rotate(24deg); }
+.avatar-marker .leg.right { left:26px; transform:rotate(-24deg); }
+.avatar-marker:not(.idle) .stickman { animation: stick-bob .32s infinite alternate; }
+.avatar-marker:not(.idle) .leg.left { animation: stick-step .32s infinite alternate; }
+.avatar-marker:not(.idle) .leg.right { animation: stick-step .32s infinite alternate-reverse; }
+.avatar-marker:not(.idle) .arm.left { animation: stick-arm .32s infinite alternate; }
+.avatar-marker:not(.idle) .arm.right { animation: stick-arm .32s infinite alternate-reverse; }
+@keyframes stick-step { from {transform:rotate(30deg)} to {transform:rotate(-30deg)} }
+@keyframes stick-arm { from {transform:rotate(42deg)} to {transform:rotate(-42deg)} }
+@keyframes stick-bob {to{transform:translateY(-2px)}}
 
 /* Flat community post markers */
 .post-marker{
@@ -398,9 +267,13 @@ button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
 <div class="sky"></div>
 <div class="vignette"></div>
 
-<div class="camera-tools" aria-label="Camera controls">
-  <button id="rotateBtn" aria-label="Rotate camera">↻</button>
-  <button id="tiltBtn" aria-label="Change camera perspective">◫</button>
+<div id="pinPicker" class="pin-picker" role="group" aria-label="Place a map pin">
+  <div class="picker-title">Place a pin here</div>
+  <div class="picker-actions">
+    <button id="addCandy" type="button" aria-label="Candy available">🍬</button>
+    <button id="addX" type="button" aria-label="No candy">❌</button>
+  </div>
+  <button id="cancelPin" class="picker-cancel" type="button">Cancel</button>
 </div>
 
 <div class="attribution">
@@ -433,6 +306,15 @@ let spotMarkers = [];
 let pressed = new Set();
 let lastFrame = 0;
 let manualMode = false;
+const PIN_STORAGE_KEY = "trackyourtreat-walking-pins-v1";
+let localPins = [];
+let pendingPin = null;
+try {
+  const stored = JSON.parse(localStorage.getItem(PIN_STORAGE_KEY) || "[]");
+  if (Array.isArray(stored)) localPins = stored.filter(p =>
+    Number.isFinite(p.lat) && Number.isFinite(p.lng) && ["candy","x"].includes(p.kind));
+} catch (error) { console.warn("Local pin storage is unavailable:", error); }
+
 
 function meters(lat, lng, east, north) {
   const dLat = north / 111111;
@@ -451,15 +333,11 @@ function stopGPSForManualMovement() {
 function buildAvatarElement() {
   const el = document.createElement("div");
   el.className = "avatar-marker idle";
-  el.innerHTML = `
-    <div class="ring"></div>
-    <div class="body">
-      <div class="hatCone"></div><div class="hatBrim"></div><div class="hatBand"></div>
-      <div class="hair"></div><div class="face"></div><div class="smile"></div>
-      <div class="arm left"></div><div class="arm right"></div><div class="shirt"></div>
-      <div class="leg left"><div class="shoe"></div></div>
-      <div class="leg right"><div class="shoe"></div></div>
-    </div>`;
+  el.innerHTML = `<div class="stickman">
+    <div class="head"><span class="eyes"></span><span class="mouth"></span></div>
+    <div class="torso"></div><div class="arm left"></div><div class="arm right"></div>
+    <div class="leg left"></div><div class="leg right"></div>
+  </div>`;
   return el;
 }
 
@@ -488,7 +366,7 @@ function postMarkerElement(house) {
     house.status === "Out of candy" ? "out" : "";
 
   const emoji =
-    house.status === "Out of candy" ? "🚫" :
+    house.status === "Out of candy" ? "❌" :
     house.status === "Running low" ? "🎃" : "🍬";
 
   el.className = `post-marker ${stateClass}`;
@@ -512,7 +390,13 @@ function refreshMarkers() {
   spotMarkers.forEach(marker => marker.remove());
   spotMarkers = [];
 
-  realHouses.forEach(house => {
+  const pins = [...realHouses, ...localPins.map(p => ({
+    lat:p.lat, lng:p.lng,
+    status:p.kind === "candy" ? "Candy available" : "Out of candy",
+    address:p.kind === "candy" ? "Candy pin" : "No candy pin",
+    comments:"Your pin, saved on this device."
+  }))];
+  pins.forEach(house => {
     const marker = new maplibregl.Marker({
       element: postMarkerElement(house),
       anchor: "bottom"
@@ -904,6 +788,115 @@ window.addEventListener("keyup", event => {
 
 window.addEventListener("blur", () => pressed.clear());
 
+function closePinPicker() {
+  pendingPin = null;
+  $("pinPicker").classList.remove("show");
+}
+
+function openPinPicker(clientX, clientY) {
+  const bounds = map.getCanvas().getBoundingClientRect();
+  const x = Math.max(0, Math.min(bounds.width, clientX - bounds.left));
+  const y = Math.max(0, Math.min(bounds.height, clientY - bounds.top));
+  const coordinates = map.unproject([x,y]);
+  pendingPin = {lat:coordinates.lat, lng:coordinates.lng};
+  const picker = $("pinPicker");
+  // Keep the picker fully on screen, even near the edges of a phone.
+  picker.style.left = `${Math.max(83, Math.min(innerWidth-83,clientX))}px`;
+  picker.style.top = `${Math.max(116,clientY)}px`;
+  picker.classList.add("show");
+}
+function addLocalPin(kind) {
+  if (!pendingPin) return;
+  localPins.push({...pendingPin,kind});
+  try { localStorage.setItem(PIN_STORAGE_KEY,JSON.stringify(localPins)); }
+  catch (error) { console.warn("Pin could not be saved on this device:",error); }
+  closePinPicker();
+  refreshMarkers();
+}
+$("addCandy").addEventListener("click", () => addLocalPin("candy"));
+$("addX").addEventListener("click", () => addLocalPin("x"));
+$("cancelPin").addEventListener("click", closePinPicker);
+
+/* The camera follows GPS position but never overwrites the user's bearing/pitch. */
+function setupMapGestures() {
+  const canvas = map.getCanvas();
+  const pointers = new Map();
+  let initialPinchDistance = 0;
+  let initialPitch = 0;
+  let holdTimer = null;
+  let holdFired = false;
+  let lastMouseClick = 0;
+  let lastMousePoint = null;
+  const clamp = (value,min,max) => Math.max(min,Math.min(max,value));
+  const clearHold = () => { if (holdTimer) clearTimeout(holdTimer); holdTimer=null; };
+  const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+  const makePinchBaseline = () => {
+    const [a,b] = [...pointers.values()];
+    initialPinchDistance = distance(a,b);
+    initialPitch = map.getPitch();
+  };
+  canvas.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    closePinPicker();
+    // MapLibre's default gestures are disabled to avoid competing movements.
+    canvas.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId,{x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY});
+    holdFired = false;
+    clearHold();
+    if (pointers.size === 1 && event.pointerType !== "mouse") {
+      const x=event.clientX,y=event.clientY;
+      holdTimer=setTimeout(() => {
+        if (pointers.size === 1) {
+          holdFired=true;
+          openPinPicker(x,y);
+        }
+      },550);
+    }
+    if (pointers.size === 2) makePinchBaseline();
+  });
+  canvas.addEventListener("pointermove", event => {
+    const pointer=pointers.get(event.pointerId);
+    if (!pointer) return;
+    const dx=event.clientX-pointer.x;
+    pointer.x=event.clientX;
+    pointer.y=event.clientY;
+    if (distance({x:pointer.startX,y:pointer.startY},pointer)>12) clearHold();
+    if (holdFired) return;
+    if (pointers.size === 1) {
+      // Horizontal finger drag or mouse drag rotates the viewpoint.
+      if (Math.abs(dx)>0) map.setBearing(map.getBearing()+dx*0.48);
+    } else if (pointers.size === 2) {
+      clearHold();
+      const [a,b]=[...pointers.values()];
+      // Pinch apart = lower viewing angle; pinch together = more top-down.
+      map.setPitch(clamp(initialPitch + (distance(a,b)-initialPinchDistance)*0.23, 12, 80));
+    }
+  });
+  const finishPointer = event => {
+    const pointer=pointers.get(event.pointerId);
+    if (!pointer) return;
+    const travel=distance({x:pointer.startX,y:pointer.startY},pointer);
+    const wasSingle=pointers.size===1;
+    pointers.delete(event.pointerId);
+    clearHold();
+    if (pointers.size===1) {
+      const remaining=[...pointers.values()][0];
+      remaining.startX=remaining.x; remaining.startY=remaining.y;
+    }
+    if (event.type==="pointerup" && event.pointerType==="mouse" && wasSingle && travel<7 && !holdFired) {
+      const now=performance.now();
+      const point={x:event.clientX,y:event.clientY};
+      if (now-lastMouseClick<420 && lastMousePoint && distance(point,lastMousePoint)<25) {
+        openPinPicker(event.clientX,event.clientY);
+        lastMouseClick=0;
+      } else {lastMouseClick=now;lastMousePoint=point;}
+    }
+  };
+  canvas.addEventListener("pointerup", finishPointer);
+  canvas.addEventListener("pointercancel",finishPointer);
+  canvas.addEventListener("contextmenu",event=>event.preventDefault());
+}
+
 map = new maplibregl.Map({
   container: "map",
   style: {
@@ -916,11 +909,18 @@ map = new maplibregl.Map({
   zoom: 17.6,
   pitch: 68,
   bearing: -18,
-  antialias: true
+  antialias: true,
+  maxPitch: 80,
+  dragPan: false,
+  dragRotate: false,
+  touchZoomRotate: false,
+  doubleClickZoom: false
 });
 
 map.on("load", async () => {
   setupLayers();
+  setupMapGestures();
+  refreshMarkers();
 
   avatarMarker = new maplibregl.Marker({
     element: buildAvatarElement(),
@@ -936,33 +936,6 @@ map.on("load", async () => {
   */
   startGPS();
   requestAnimationFrame(animateFrame);
-});
-
-map.on("dragstart", () => {
-  following = false;
-});
-
-$("rotateBtn").addEventListener("click", event => {
-  event.stopPropagation();
-  map.rotateTo(map.getBearing() - 35, {
-    duration: 450,
-    essential: true
-  });
-});
-
-$("tiltBtn").addEventListener("click", event => {
-  event.stopPropagation();
-
-  const currentlyLow = map.getPitch() > 50;
-
-  map.easeTo({
-    center: map.getCenter(),
-    pitch: currentlyLow ? 28 : 68,
-    zoom: currentlyLow ? 17.1 : 18.15,
-    bearing: map.getBearing(),
-    duration: 650,
-    essential: true
-  });
 });
 
 $("closeCard").addEventListener("click", closeCard);
