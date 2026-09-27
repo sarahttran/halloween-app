@@ -137,7 +137,9 @@
             <textarea id="houseComments" name="comments" maxlength="250" rows="3"
                       placeholder="e.g. Chocolate and gummies, 6–9 PM"></textarea>
 
-            <p class="dialog-note">Demo: saves on this browser until Firebase is connected.</p>
+            <p class="dialog-note">
+                Your house will be added to the TrackYourTreat map!
+            </p>
             <p id="formMessage" class="form-message" role="status" aria-live="polite"></p>
             <div class="dialog-actions">
                 <button id="cancelHouse" class="button button-white" type="button">Cancel</button>
@@ -148,7 +150,11 @@
 
     <!-- Leaflet and existing functionality -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
+    
+    <!-- Linking the database-->
+    <script type="module">
+        import { getHouses, saveHouse } from "./firebase.js";
+
         // Map setup
         const map = L.map("map").setView([39.254, -76.714], 15);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -180,11 +186,7 @@
             iconAnchor: [26, 65],
             popupAnchor: [0, -52]
         });
-
-        // Example house remains an example (it isn't included in CSV exports).
-        L.marker([39.255, -76.713], { icon: candyCornIcon })
-            .addTo(map)
-            .bindPopup("<b>Participating House</b><br>Candy: Chocolate and gummies<br>Hours: 6 PM - 9 PM");
+    
 
         // Neighborhood search - unchanged behavior.
         const searchForm = document.getElementById("searchForm");
@@ -216,8 +218,7 @@
         // HOUSE PINS + FORM
         // Firebase handoff: replace loadHouses() and saveHouseData() with your
         // partner's Firestore code. House fields: {lat, lng, address, status, comments}.
-        const STORAGE_KEY = "trackYourTreatPins";
-        let savedPins = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        let savedPins = [];
         let placingPin = false;
         let pendingLocation = null;
         let editingIndex = null;
@@ -236,16 +237,23 @@
         const formMessage = document.getElementById("formMessage");
         const saveHouseButton = document.getElementById("saveHouse");
 
+        //Load houses from firebase
         async function loadHouses() {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+            return await getHouses();
         }
 
+        // Save or update a house in Firebase
         async function saveHouseData(house, index) {
-            const houses = await loadHouses();
-            if (index === null) houses.push(house);
-            else houses[index] = house;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(houses));
-            return houses;
+            // If we're editing, reuse the existing house's ID
+            if (index !== null) {
+                house.id = savedPins[index].id;
+            }
+
+            // Save the house to Firebase
+            await saveHouse(house);
+
+            // Retrieve the updated list of houses
+            return await loadHouses();
         }
 
         function displayPin(house, index) {
@@ -277,7 +285,27 @@
             houseMarkers.forEach(marker => map.removeLayer(marker));
             houseMarkers = savedPins.map(displayPin);
         }
-        refreshPins();
+        async function initializeHouses() {
+            try {
+                savedPins = await loadHouses();
+                refreshPins();
+
+                console.log(
+                    "Firebase houses loaded:",
+                    savedPins.length
+                );
+            } catch (error) {
+                console.error(
+                    "Could not load Firebase houses:",
+                    error
+                );
+
+                pinMessage.textContent =
+                    "Unable to load houses. Please try refreshing.";
+            }
+        }
+
+        initializeHouses();
 
         // A translucent candy corn follows the mouse BEFORE the user clicks.
         // It starts in the center of the map so it is visible immediately.

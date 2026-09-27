@@ -1,53 +1,78 @@
 import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 
 import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    updateDoc,
+    doc,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-// Your TrackYourTreat Firebase configuration
+// Your existing Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAWhlvfzFVQciVWfgMU8T44jLgwYN5lRXI",
-  authDomain: "trackyourtreat.firebaseapp.com",
-  projectId: "trackyourtreat",
-  storageBucket: "trackyourtreat.firebasestorage.app",
-  messagingSenderId: "384533157822",
-  appId: "1:384533157822:web:496344fb6debb56da38bef",
-  measurementId: "G-GS20RCQR6F"
+    apiKey: "YOUR_EXISTING_API_KEY",
+    authDomain: "trackyourtreat.firebaseapp.com",
+    projectId: "trackyourtreat",
+    storageBucket: "trackyourtreat.firebasestorage.app",
+    messagingSenderId: "384533157822",
+    appId: "1:384533157822:web:496344fb6debb56da38bef",
+    measurementId: "G-GS20RCQR6F"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Cloud Firestore
 const db = getFirestore(app);
 
-// TEST 1: Add a house to Firebase
-export async function addHouse() {
-  const docRef = await addDoc(collection(db, "houses"), {
-    name: "Test Halloween House",
-    latitude: 39.2557,
-    longitude: -76.7112,
-    hasCandy: true,
-    createdAt: new Date()
-  });
+// Retrieve all saved houses
+export async function getHouses() {
+    const snapshot = await getDocs(collection(db, "houses"));
 
-  console.log("House added:", docRef.id);
-  return docRef.id;
+    return snapshot.docs.map(document => {
+        const data = document.data();
+
+        return {
+            ...data,
+            id: document.id,
+            lat: data.lat ?? data.latitude,
+            lng: data.lng ?? data.longitude,
+            address: data.address ?? data.name ?? "",
+            status: data.status ??
+                (data.hasCandy
+                    ? "Handing out candy"
+                    : "Out of candy"),
+            comments: data.comments ?? ""
+        };
+    }).filter(house =>
+        typeof house.lat === "number" &&
+        typeof house.lng === "number"
+    );
 }
 
-// TEST 2: Retrieve all houses from Firebase
-export async function getHouses() {
-  const snapshot = await getDocs(collection(db, "houses"));
+// Save a new house or update an existing house
+export async function saveHouse(house) {
+    const data = {
+        lat: house.lat,
+        lng: house.lng,
+        address: house.address,
+        status: house.status,
+        comments: house.comments
+    };
 
-  const houses = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+    if (house.id) {
+        await updateDoc(doc(db, "houses", house.id), {
+            ...data,
+            updatedAt: serverTimestamp()
+        });
 
-  console.log("Retrieved houses:", houses);
-  return houses;
+        return house.id;
+    }
+
+    const document = await addDoc(collection(db, "houses"), {
+        ...data,
+        createdAt: serverTimestamp()
+    });
+
+    return document.id;
 }
