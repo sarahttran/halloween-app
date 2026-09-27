@@ -13,7 +13,7 @@ import {
 
 // Your existing Firebase configuration
 const firebaseConfig = {
-    apiKey: "YOUR_EXISTING_API_KEY",
+    apiKey: "AIzaSyAWhlvfzFVQciVWfgMU8T44jLgwYN5lRXI",
     authDomain: "trackyourtreat.firebaseapp.com",
     projectId: "trackyourtreat",
     storageBucket: "trackyourtreat.firebasestorage.app",
