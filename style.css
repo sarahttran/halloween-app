@@ -327,13 +327,29 @@ button {
 }
 
 /* Existing Leaflet map */
+
+/* SPOOKY HALLOWEEN MAP */
+
 #map {
     height: 500px;
     width: 100%;
-    border: 2px solid var(--border);
+    border: 4px solid #65408b;
     border-radius: 20px;
+    background: #20162f;
+    box-shadow: 0 0 25px rgba(112, 61, 160, 0.35);
     z-index: 1;
 }
+
+/* Spooky map - lighter version */
+#map .leaflet-tile-pane {
+    filter:
+        grayscale(40%)
+        invert(85%)
+        hue-rotate(190deg)
+        brightness(105%)
+        contrast(90%);
+}
+  
 
 .map-footer {
     padding: 12px 5px 0;
@@ -492,3 +508,44 @@ footer {
 @media (max-width: 550px) { .house-form { padding: 20px; } }
 
 .form-message { min-height: 1em; margin: 7px 0 0; color: var(--purple); font-size: 13px; font-weight: 800; }
+
+/* CENTERED HOMEPAGE TITLE */
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 45px 20px 35px;
+    text-align: center;
+}
+
+.site-title {
+    font-family: "Baloo 2", cursive;
+    font-size: clamp(42px, 7vw, 76px);
+    font-weight: 800;
+    color: #65428a;
+    line-height: 1.2;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    text-shadow: 3px 4px 0 #f5d9ff;
+}
+
+.site-title span {
+    color: #f28c38;
+}
+
+.site-subtitle {
+    font-size: 17px;
+    color: #776a80;
+    margin: 12px auto 0;
+    text-align: center;
+}
+
+.site-subtitle {
+    font-size: 17px;
+    color: #776a80;
+    margin: 12px auto 0;
+}

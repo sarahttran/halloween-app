@@ -27,26 +27,15 @@
     </header>
 
     <!-- Welcome -->
-    <section class="hero" id="home">
-        <div class="container">
-            <div class="hero-card">
-                <div class="hero-text">
-                    <span class="hero-label">YOUR NEIGHBORHOOD FRIEND</span>
-                    <h1>Less searching.<br><span>More treating!</span></h1>
-                    <p>
-                        Find participating houses in your neighborhood! Explore the map,
-                        discover treats, or add your own house for Halloween.
-                    </p>
-                    <a href="#map-section" class="button button-orange">🍬 View Map ↓</a>
-                </div>
-                <div class="hero-image" aria-hidden="true">
-                    <span class="pumpkin">🎃</span>
-                    <span class="ghost">👻</span>
-                    <span class="candy">🍬</span>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Welcome -->
+<section class="hero" id="home">
+    <h1 class="site-title">
+         Track <span>Your</span> Treat! 
+    </h1>
+    <p class="site-subtitle">
+        Find the sweetest stops in your neighborhood!
+    </p>
+</section>
 
     <!-- Map -->
     <section class="map-section" id="map-section">
@@ -156,7 +145,9 @@
         import { getHouses, saveHouse } from "./firebase.js";
 
         // Map setup
-        const map = L.map("map").setView([39.254, -76.714], 15);
+        const map = L.map("map").setView([39.254, -76.714], 18);
+        // Keep track of the searched location
+        let searchMarker = null;
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -208,7 +199,29 @@
                     return;
                 }
                 const result = results[0];
-                map.setView([Number(result.lat), Number(result.lon)], 14);
+                const lat = Number(result.lat);
+                const lng = Number(result.lon);
+
+                // Remove the previous search pin
+                if (searchMarker) {
+                    map.removeLayer(searchMarker);
+                }
+
+                // Add a pin at the searched address
+                searchMarker = L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup("Your searched location");
+
+                // Smoothly fly to the address
+                map.flyTo([lat, lng], 18, {
+                    animate: true,
+                    duration: 1.5
+                });
+
+                // Open the popup after the flight finishes
+                map.once("moveend", function() {
+                    searchMarker.openPopup();
+                });
                 searchMessage.textContent = result.display_name;
             } catch (error) {
                 searchMessage.textContent = "Search unavailable. Please try again.";
@@ -455,7 +468,7 @@
                 return;
             }
             navigator.geolocation.getCurrentPosition(
-                position => map.setView([position.coords.latitude, position.coords.longitude], 16),
+                position => map.flyTo([position.coords.latitude, position.coords.longitude], 18),
                 () => { pinMessage.textContent = "Unable to access your location."; }
             );
         });
