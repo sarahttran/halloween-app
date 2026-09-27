@@ -36,9 +36,7 @@ button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
   height:43vh;
   pointer-events:none;
   background:
-    radial-gradient(circle at 50% 112%, rgba(255,145,74,.55), transparent 31%),
-    radial-gradient(circle at 50% 58%, rgba(255,202,118,.25), transparent 34%),
-    linear-gradient(180deg,#201239 0%,#382051 43%,rgba(91,63,121,.45) 69%,transparent 100%);
+    linear-gradient(180deg,#1d1133 0%,#35204d 45%,rgba(72,53,92,.38) 72%,transparent 100%);
 }
 .sky::before,
 .sky::after{
@@ -84,7 +82,7 @@ button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
 /* Only two camera buttons */
 .camera-tools{
   position:absolute;
-  z-index:8;
+  z-index:20;
   right:14px;
   bottom:max(46px, env(safe-area-inset-bottom));
   display:flex;
@@ -473,12 +471,13 @@ function updateAvatar(moving = false) {
 
   avatarMarker.setLngLat([walker.lng, walker.lat]);
 
+  /*
+     GPS can fire several times while a camera animation is running.
+     setCenter() changes only the center, so it does not cancel or reset
+     the user's bearing/pitch choice.
+  */
   if (following) {
-    map.easeTo({
-      center: [walker.lng, walker.lat],
-      duration: moving ? 160 : 500,
-      essential: true
-    });
+    map.setCenter([walker.lng, walker.lat]);
   }
 }
 
@@ -551,7 +550,7 @@ function setupLayers() {
   map.addLayer({
     id: "ground",
     type: "background",
-    paint: { "background-color": "#93c777" }
+    paint: { "background-color": "#667c45" }
   });
 
   map.addLayer({
@@ -569,7 +568,7 @@ function setupLayers() {
     type: "line",
     source: "roads",
     paint: {
-      "line-color": "#f4e8d1",
+      "line-color": "#e8d5b4",
       "line-width": ["interpolate", ["linear"], ["zoom"], 14, 2.4, 18, 8.5],
       "line-opacity": 0.96
     }
@@ -583,10 +582,10 @@ function setupLayers() {
       "fill-extrusion-color": [
         "match",
         ["coalesce", ["get", "kind"], "house"],
-        "house", "#c3916a",
-        "apartment", "#a98899",
-        "commercial", "#a68e72",
-        "#bb936e"
+        "house", "#9b684d",
+        "apartment", "#806576",
+        "commercial", "#7d6955",
+        "#8f7057"
       ],
       "fill-extrusion-height": ["coalesce", ["get", "height"], 8],
       "fill-extrusion-base": 0,
@@ -700,36 +699,62 @@ function sampleWorld(center) {
   return { roads, buildings };
 }
 
-async function loadWorld(center) {
-  let world = sampleWorld(center);
+async function loadWorld(center, allowSampleFallback = false) {
+  const emptyWorld = {
+    roads: { type: "FeatureCollection", features: [] },
+    buildings: { type: "FeatureCollection", features: [] }
+  };
 
-  try {
-    const query = `[out:json][timeout:18];(way["highway"](around:380,${center.lat},${center.lng});way["building"](around:380,${center.lat},${center.lng}););out body;>;out skel qt;`;
+  const query =
+    `[out:json][timeout:18];(` +
+    `way["highway"](around:420,${center.lat},${center.lng});` +
+    `way["building"](around:420,${center.lat},${center.lng});` +
+    `);out body;>;out skel qt;`;
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
+  const endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+  ];
 
-    const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
-      method: "POST",
-      body: new URLSearchParams({ data: query }),
-      signal: controller.signal
-    });
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 14000);
 
-    clearTimeout(timer);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: new URLSearchParams({ data: query }),
+        signal: controller.signal
+      });
 
-    if (!response.ok) throw new Error("Map data request failed");
+      clearTimeout(timer);
 
-    const parsed = overpassGeo(await response.json());
+      if (!response.ok) {
+        throw new Error(`Map request failed: ${response.status}`);
+      }
 
-    if (parsed.roads.features.length) {
-      world = parsed;
+      const parsed = overpassGeo(await response.json());
+
+      if (parsed.roads.features.length || parsed.buildings.features.length) {
+        map.getSource("roads").setData(parsed.roads);
+        map.getSource("buildings").setData(parsed.buildings);
+        return true;
+      }
+    } catch (error) {
+      console.warn("Map geometry endpoint failed:", endpoint, error);
     }
-  } catch (error) {
-    console.warn("Using sample map geometry.", error);
   }
 
-  map.getSource("roads").setData(world.roads);
-  map.getSource("buildings").setData(world.buildings);
+  /*
+     Important: if GPS worked, do NOT replace the user's real neighborhood
+     with fake sample streets. A plain grass field is less confusing than
+     displaying fictional roads over a real GPS position.
+  */
+  const fallback = allowSampleFallback ? sampleWorld(center) : emptyWorld;
+  map.getSource("roads").setData(fallback.roads);
+  map.getSource("buildings").setData(fallback.buildings);
+
+  return false;
 }
 
 async function connectFirebase() {
@@ -753,6 +778,7 @@ async function connectFirebase() {
 function startGPS() {
   if (!navigator.geolocation) {
     console.warn("Geolocation is unavailable. The page may be running without HTTPS.");
+    loadWorld(walker, true);
     return;
   }
 
@@ -762,43 +788,65 @@ function startGPS() {
     async position => {
       if (manualMode) return;
 
+      const firstFix = !map.__hasGpsFix;
+
       walker = {
         lat: position.coords.latitude,
         lng: position.coords.longitude
       };
 
+      map.__hasGpsFix = true;
       updateAvatar(true);
 
-      if (!map.__loadedLiveArea) {
-        map.__loadedLiveArea = true;
-        map.flyTo({
+      if (firstFix) {
+        /*
+           Move to the actual GPS location immediately.
+           Then load real OSM geometry around those coordinates.
+        */
+        map.jumpTo({
           center: [walker.lng, walker.lat],
-          zoom: 18.2,
+          zoom: 18.15,
           pitch: 68,
-          bearing: -18,
-          duration: 1200
+          bearing: -18
         });
 
-        await loadWorld(walker);
+        await loadWorld(walker, false);
         await connectFirebase();
       }
     },
-    error => {
+    async error => {
       console.warn("GPS unavailable.", error);
-      gpsWatch = null;
+
+      if (gpsWatch !== null) {
+        navigator.geolocation.clearWatch(gpsWatch);
+        gpsWatch = null;
+      }
+
+      /*
+         Only use the sample neighborhood if there was no GPS fix at all.
+         This keeps fake roads from appearing over a real location.
+      */
+      if (!map.__hasGpsFix) {
+        await loadWorld(walker, true);
+        await connectFirebase();
+      }
     },
     {
       enableHighAccuracy: true,
-      maximumAge: 4000,
-      timeout: 12000
+      maximumAge: 2000,
+      timeout: 15000
     }
   );
 }
-
 function moveVector(east, north) {
+  const enteringManualMode = !manualMode;
   stopGPSForManualMovement();
   walker = meters(walker.lat, walker.lng, east, north);
   updateAvatar(true);
+
+  if (enteringManualMode && !map.__hasGpsFix) {
+    loadWorld(walker, true);
+  }
 }
 
 function animateFrame(timestamp) {
@@ -881,9 +929,11 @@ map.on("load", async () => {
   .setLngLat([walker.lng, walker.lat])
   .addTo(map);
 
-  await loadWorld(walker);
-  await connectFirebase();
-
+  /*
+     GPS is the normal starting point. We intentionally do not load the
+     sample neighborhood here because it can flash over the user's actual
+     location before real geometry finishes loading.
+  */
   startGPS();
   requestAnimationFrame(animateFrame);
 });
@@ -892,20 +942,26 @@ map.on("dragstart", () => {
   following = false;
 });
 
-$("rotateBtn").addEventListener("click", () => {
-  map.easeTo({
-    bearing: map.getBearing() - 35,
-    duration: 500
+$("rotateBtn").addEventListener("click", event => {
+  event.stopPropagation();
+  map.rotateTo(map.getBearing() - 35, {
+    duration: 450,
+    essential: true
   });
 });
 
-$("tiltBtn").addEventListener("click", () => {
+$("tiltBtn").addEventListener("click", event => {
+  event.stopPropagation();
+
   const currentlyLow = map.getPitch() > 50;
 
   map.easeTo({
+    center: map.getCenter(),
     pitch: currentlyLow ? 28 : 68,
-    zoom: currentlyLow ? 16.9 : 18.2,
-    duration: 700
+    zoom: currentlyLow ? 17.1 : 18.15,
+    bearing: map.getBearing(),
+    duration: 650,
+    essential: true
   });
 });
 
