@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>TrackYourTreat • Walking Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+:root{
+  --cream:#fff6ea;
+  --plum:#6d4a97;
+  --plum-dark:#4d306f;
+  --orange:#ff974e;
+  --grass:#93c777;
+  --road:#f6ead5;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Nunito,sans-serif;
+  background:#87b76c;
+}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
+#map{position:absolute;inset:0}
+.maplibregl-control-container{display:none}
+
+/* Dark Halloween sky overlay */
+.sky{
+  position:absolute;
+  inset:0 0 auto 0;
+  height:43vh;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,#1d1133 0%,#35204d 45%,rgba(72,53,92,.38) 72%,transparent 100%);
+}
+.sky::before,
+.sky::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  background:rgba(255,255,255,.82);
+  filter:blur(.4px);
+}
+.sky::before{
+  width:3px;
+  height:3px;
+  top:18%;
+  left:20%;
+  box-shadow:
+    120px 35px 0 rgba(255,255,255,.75),
+    260px -8px 0 rgba(255,255,255,.5),
+    430px 60px 0 rgba(255,255,255,.8),
+    630px 22px 0 rgba(255,255,255,.6),
+    780px 90px 0 rgba(255,255,255,.8),
+    950px 35px 0 rgba(255,255,255,.55);
+}
+.sky::after{
+  width:2px;
+  height:2px;
+  top:8%;
+  left:8%;
+  box-shadow:
+    90px 28px 0 rgba(255,255,255,.45),
+    330px 90px 0 rgba(255,255,255,.65),
+    560px 15px 0 rgba(255,255,255,.55),
+    720px 48px 0 rgba(255,255,255,.65),
+    920px 16px 0 rgba(255,255,255,.5);
+}
+.vignette{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 43%, transparent 38%, rgba(19,10,34,.11) 74%, rgba(19,10,34,.2) 100%);
+}
+
+/* Map gestures are handled directly on the canvas. */
+#map .maplibregl-canvas { touch-action: none; cursor: grab; }
+#map .maplibregl-canvas:active { cursor: grabbing; }
+
+/* Tiny context menu used only while placing a pin. */
+.pin-picker {
+  position: absolute; z-index: 30; display: none;
+  min-width: 154px; transform: translate(-50%, calc(-100% - 14px));
+  padding: 9px; border-radius: 15px; background: rgba(255,248,238,.98);
+  border: 1px solid #fff; box-shadow: 0 10px 28px #1d113355;
+  color: #4d306f; text-align:center;
+}
+.pin-picker.show { display: block; }
+.pin-picker .picker-title { font-size: 12px; font-weight: 800; margin-bottom: 6px; }
+.pin-picker .picker-actions { display: flex; gap: 8px; justify-content: center; }
+.pin-picker button { min-width: 52px; height: 43px; font-size: 23px; border: 1px solid #e8d8ee;
+  border-radius: 11px; background: #fff; }
+.pin-picker button:hover, .pin-picker button:focus-visible { background: #f1e7f7; }
+.pin-picker .picker-cancel { margin-top: 5px; border:0; background:transparent;
+  font-size:11px; height: auto; color: #73578d; }
+
+/* Transparent attribution in the corner */
+.attribution{
+  position:absolute;
+  z-index:8;
+  right:10px;
+  bottom:8px;
+  color:rgba(63,48,70,.65);
+  font-size:10px;
+  line-height:1.2;
+  text-align:right;
+  padding:0;
+  background:transparent;
+  text-shadow:0 1px 2px rgba(255,255,255,.55);
+}
+.attribution a{color:rgba(94,66,130,.72)}
+
+/* One-day-game style: six simple CSS shapes and a pumpkin head. */
+.avatar-marker { position: relative; width: 52px; height: 87px; pointer-events: none;
+  filter: drop-shadow(1px 3px 1px #24142c66); }
+.avatar-marker .stickman { position:absolute; inset:0; transform-origin:50% 83%; }
+.avatar-marker .head { position:absolute; left:13px; top:2px; width:28px; height:28px;
+  background:#ee8c28; border:2px solid #563127; border-radius:43% 43% 45% 45%; }
+.avatar-marker .head:before { content:''; position:absolute; width:5px; height:8px;
+  background:#456336; left:10px; top:-8px; transform:rotate(-15deg); }
+.avatar-marker .eyes { position:absolute; left:5px; top:10px; width:5px; height:5px;
+  background:#281a24; box-shadow: 11px 0 #281a24; clip-path:polygon(50% 0,100% 100%,0 100%); }
+.avatar-marker .mouth { position:absolute; width:9px; height:4px; left:8px; top:20px;
+  border-bottom:2px solid #281a24; }
+.avatar-marker .torso { position:absolute; top:30px; left:25px; width:3px; height:29px;
+  background:#211a2b; border-radius:3px; }
+.avatar-marker .arm, .avatar-marker .leg { position:absolute; width:3px;
+  background:#211a2b; border-radius:3px; transform-origin:top center; }
+.avatar-marker .arm { height:24px; top:34px; }
+.avatar-marker .arm.left { left:25px; transform:rotate(50deg); }
+.avatar-marker .arm.right { left:26px; transform:rotate(-50deg); }
+.avatar-marker .leg { top:57px; height:30px; }
+.avatar-marker .leg.left { left:25px; transform:rotate(24deg); }
+.avatar-marker .leg.right { left:26px; transform:rotate(-24deg); }
+.avatar-marker:not(.idle) .stickman { animation: stick-bob .32s infinite alternate; }
+.avatar-marker:not(.idle) .leg.left { animation: stick-step .32s infinite alternate; }
+.avatar-marker:not(.idle) .leg.right { animation: stick-step .32s infinite alternate-reverse; }
+.avatar-marker:not(.idle) .arm.left { animation: stick-arm .32s infinite alternate; }
+.avatar-marker:not(.idle) .arm.right { animation: stick-arm .32s infinite alternate-reverse; }
+@keyframes stick-step { from {transform:rotate(30deg)} to {transform:rotate(-30deg)} }
+@keyframes stick-arm { from {transform:rotate(42deg)} to {transform:rotate(-42deg)} }
+@keyframes stick-bob {to{transform:translateY(-2px)}}
+
+/* Pins are map symbols painted onto the actual ground coordinates,
+   not floating HTML elements that appear to drift as the camera tilts. */
+/* Marker detail card only appears after clicking a candy marker */
+.card{
+  position:absolute;
+  z-index:10;
+  left:16px;
+  bottom:16px;
+  width:min(350px,calc(100% - 86px));
+  background:rgba(255,248,238,.96);
+  border:2px solid rgba(255,255,255,.9);
+  border-radius:24px;
+  padding:18px 18px 16px;
+  box-shadow:0 16px 34px rgba(25,10,50,.22);
+  display:none;
+}
+.card.show{display:block}
+.card .chip{
+  display:inline-block;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:1.3px;
+  text-transform:uppercase;
+  color:#6b4a8f;
+  background:#f0e3fa;
+  border-radius:999px;
+  padding:6px 10px;
+  margin-bottom:10px;
+}
+.card h2{
+  margin:0 0 6px;
+  font-family:'Baloo 2',cursive;
+  font-size:28px;
+  line-height:1.05;
+  color:#40255d;
+}
+.card p{
+  margin:0 0 12px;
+  color:#5f476d;
+  line-height:1.45;
+  font-size:14px;
+}
+.card .actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.card button{
+  border:0;
+  border-radius:14px;
+  padding:11px 14px;
+  font-weight:900;
+}
+.card .primary{background:#6e4a98;color:#fff}
+.card .secondary{background:#f0e3fa;color:#5c3e7e}
+.card .close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:#f3e8fb;
+  color:#5b3b7d;
+  padding:0;
+}
+
+@media (max-width:640px){
+  .camera-tools button{width:39px;height:39px;border-radius:14px;font-size:16px}
+  .card{width:min(330px,calc(100% - 76px))}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="sky"></div>
+<div class="vignette"></div>
+
+<div id="pinPicker" class="pin-picker" role="group" aria-label="Place a map pin">
+  <div class="picker-title">Place a pin here</div>
+  <div class="picker-actions">
+    <button id="addCandy" type="button" aria-label="Candy available">🍬</button>
+    <button id="addX" type="button" aria-label="No candy">❌</button>
+  </div>
+  <button id="cancelPin" class="picker-cancel" type="button">Cancel</button>
+</div>
+
+<div class="attribution">
+  Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+</div>
+
+<section id="card" class="card" aria-live="polite">
+  <button id="closeCard" class="close" aria-label="Close">×</button>
+  <span id="cardChip" class="chip">Candy stop</span>
+  <h2 id="cardTitle">Candy stop</h2>
+  <p id="cardDesc"></p>
+  <div class="actions">
+    <button id="centerBtn" class="primary">Center on stop</button>
+    <button id="dismissBtn" class="secondary">Close</button>
+  </div>
+</section>
+
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+let map;
+let avatarMarker;
+let selected = null;
+let walker = { lat: 39.254117, lng: -76.711983 };
+let following = true;
+let gpsWatch = null;
+let realHouses = [];
+let pinCatalog = [];
+let pressed = new Set();
+let lastFrame = 0;
+let manualMode = false;
+// Walking mode has a fixed scale. Pinching changes only a modest camera angle.
+const WALK_ZOOM = 18.15;
+const DEFAULT_PITCH = 61;
+const MIN_PITCH = 53;
+const MAX_PITCH = 69;
+const PIN_STORAGE_KEY = "trackyourtreat-walking-pins-v1";
+let localPins = [];
+let pendingPin = null;
+try {
+  const stored = JSON.parse(localStorage.getItem(PIN_STORAGE_KEY) || "[]");
+  if (Array.isArray(stored)) localPins = stored.filter(p =>
+    Number.isFinite(p.lat) && Number.isFinite(p.lng) && ["candy","x"].includes(p.kind));
+} catch (error) { console.warn("Local pin storage is unavailable:", error); }
+
+
+function meters(lat, lng, east, north) {
+  const dLat = north / 111111;
+  const dLng = east / (111111 * Math.cos(lat * Math.PI / 180));
+  return { lat: lat + dLat, lng: lng + dLng };
+}
+
+function stopGPSForManualMovement() {
+  if (gpsWatch !== null) {
+    navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+  }
+  manualMode = true;
+}
+
+function buildAvatarElement() {
+  const el = document.createElement("div");
+  el.className = "avatar-marker idle";
+  el.innerHTML = `<div class="stickman">
+    <div class="head"><span class="eyes"></span><span class="mouth"></span></div>
+    <div class="torso"></div><div class="arm left"></div><div class="arm right"></div>
+    <div class="leg left"></div><div class="leg right"></div>
+  </div>`;
+  return el;
+}
+
+function updateAvatar(moving = false) {
+  if (!avatarMarker) return;
+
+  const avatarEl = avatarMarker.getElement();
+  if (avatarEl) avatarEl.classList.toggle("idle", !moving);
+
+  avatarMarker.setLngLat([walker.lng, walker.lat]);
+  const playerSource = map.getSource("player-ground");
+  if (playerSource) playerSource.setData({
+    type:"FeatureCollection",features:[{type:"Feature",properties:{},
+      geometry:{type:"Point",coordinates:[walker.lng,walker.lat]}}]
+  });
+
+  /*
+     GPS can fire several times while a camera animation is running.
+     setCenter() changes only the center, so it does not cancel or reset
+     the user's bearing/pitch choice.
+  */
+  if (following) {
+    map.setCenter([walker.lng, walker.lat]);
+  }
+}
+
+// Canvas-drawn candy and X decals, intentionally flat and low-detail.
+function groundPinImage(kind) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 80;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = kind === "x" ? "#4d306f" : "#e97e2d";
+  ctx.beginPath(); ctx.arc(40, 40, 29, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 5; ctx.strokeStyle = "#fff6e8"; ctx.stroke();
+  if (kind === "x") {
+    ctx.strokeStyle = "#fff6e8"; ctx.lineWidth = 9; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(29,29); ctx.lineTo(51,51);
+    ctx.moveTo(51,29); ctx.lineTo(29,51); ctx.stroke();
+  } else {
+    ctx.fillStyle = "#fff6e8";
+    // Small wrapped sweet: rectangle, two wrapper triangles, one stripe.
+    ctx.fillRect(30, 33, 20, 14);
+    ctx.beginPath(); ctx.moveTo(30,36); ctx.lineTo(21,30);
+    ctx.lineTo(21,50); ctx.lineTo(30,44); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(50,36); ctx.lineTo(59,30);
+    ctx.lineTo(59,50); ctx.lineTo(50,44); ctx.fill();
+    ctx.fillStyle = "#e97e2d"; ctx.fillRect(38,33,4,14);
+  }
+  return canvas;
+}
+
+function setupGroundPins() {
+  map.addSource("community-pins", {
+    type: "geojson", data: {type:"FeatureCollection",features:[]}
+  });
+  map.addImage("ground-candy",groundPinImage("candy"),{pixelRatio:2});
+  map.addImage("ground-x",groundPinImage("x"),{pixelRatio:2});
+  map.addLayer({
+    id: "community-pins-ground", type: "symbol", source: "community-pins",
+    layout: {
+      "icon-image": ["get","icon"],
+      "icon-size": 0.88,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "map",
+      "icon-rotation-alignment": "map"
+    }
+  });
+  map.on("mouseenter","community-pins-ground",()=>{
+    map.getCanvas().style.cursor="pointer";
+  });
+  map.on("mouseleave","community-pins-ground",()=>{
+    map.getCanvas().style.cursor="grab";
+  });
+}
+
+function refreshMarkers() {
+  pinCatalog = [...realHouses, ...localPins.map(p => ({
+    lat:p.lat, lng:p.lng,
+    status:p.kind === "candy" ? "Candy available" : "Out of candy",
+    address:p.kind === "candy" ? "Candy pin" : "No candy pin",
+    comments:"Your pin, saved on this device."
+  }))];
+  const source = map.getSource("community-pins");
+  if (!source) return;
+  source.setData({
+    type: "FeatureCollection",
+    features: pinCatalog.map((house,index) => ({
+      type: "Feature",
+      properties: {
+        index,
+        icon: house.status === "Out of candy" ? "ground-x" : "ground-candy"
+      },
+      geometry: {type:"Point",coordinates:[house.lng,house.lat]}
+    }))
+  });
+}
+
+function clickedGroundPin(clientX, clientY) {
+  const rect = map.getCanvas().getBoundingClientRect();
+  const point = [clientX - rect.left, clientY - rect.top];
+  const hits = map.queryRenderedFeatures(point,{layers:["community-pins-ground"]});
+  if (!hits.length) return false;
+  const house = pinCatalog[hits[0].properties.index];
+  if (!house) return false;
+  showCard(house);
+  return true;
+}
+
+function showCard(house) {
+  selected = house;
+  $("cardChip").textContent = house.status || "Candy stop";
+  $("cardTitle").textContent = house.address || "Candy stop";
+  $("cardDesc").textContent = house.comments || "Community-submitted Halloween stop.";
+  $("card").classList.add("show");
+}
+
+function closeCard() {
+  $("card").classList.remove("show");
+}
+
+function setupLayers() {
+  map.addSource("roads", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] }
+  });
+
+  map.addSource("buildings", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] }
+  });
+
+  map.addSource("player-ground",{
+    type:"geojson",data:{type:"FeatureCollection",features:[]}
+  });
+  map.addLayer({
+    id: "ground",
+    type: "background",
+    paint: { "background-color": "#667c45" }
+  });
+
+  map.addLayer({
+    id: "roads-glow",
+    type: "line",
+    source: "roads",
+    paint: {
+      "line-color": "rgba(255,252,244,.26)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 14]
+    }
+  });
+
+  map.addLayer({
+    id: "roads-line",
+    type: "line",
+    source: "roads",
+    paint: {
+      "line-color": "#e8d5b4",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 14, 2.4, 18, 8.5],
+      "line-opacity": 0.96
+    }
+  });
+
+  map.addLayer({
+    id: "buildings-fill",
+    type: "fill-extrusion",
+    source: "buildings",
+    paint: {
+      "fill-extrusion-color": [
+        "match",
+        ["coalesce", ["get", "kind"], "house"],
+        "house", "#9b684d",
+        "apartment", "#806576",
+        "commercial", "#7d6955",
+        "#8f7057"
+      ],
+      "fill-extrusion-height": ["coalesce", ["get", "height"], 8],
+      "fill-extrusion-base": 0,
+      "fill-extrusion-opacity": 0.88,
+      "fill-extrusion-vertical-gradient": true
+    }
+  });
+  // This circle shares the avatar's GPS coordinates and sits on the ground.
+  map.addLayer({
+    id:"player-footprint",type:"circle",source:"player-ground",
+    paint:{"circle-radius":7,"circle-color":"#321b49",
+      "circle-opacity":0.52,"circle-pitch-alignment":"map",
+      "circle-pitch-scale":"map"}
+  });
+}
+
+function overpassGeo(json) {
+  const nodes = new Map();
+
+  (json.elements || []).forEach(element => {
+    if (element.type === "node") {
+      nodes.set(element.id, [element.lon, element.lat]);
+    }
+  });
+
+  const roads = { type: "FeatureCollection", features: [] };
+  const buildings = { type: "FeatureCollection", features: [] };
+
+  (json.elements || []).forEach(element => {
+    if (element.type !== "way" || !element.nodes) return;
+
+    const coords = element.nodes
+      .map(id => nodes.get(id))
+      .filter(Boolean);
+
+    if (coords.length < 2) return;
+
+    if (element.tags && element.tags.highway) {
+      roads.features.push({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: coords },
+        properties: { highway: element.tags.highway }
+      });
+    }
+
+    if (element.tags && element.tags.building && coords.length >= 4) {
+      const isClosed =
+        coords[0][0] === coords.at(-1)[0] &&
+        coords[0][1] === coords.at(-1)[1];
+
+      const closed = isClosed ? coords : [...coords, coords[0]];
+      const buildingType = element.tags.building;
+      const levels = Number(element.tags["building:levels"]) || 1;
+
+      buildings.features.push({
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [closed] },
+        properties: {
+          kind:
+            buildingType === "house" ||
+            buildingType === "residential" ||
+            buildingType === "detached"
+              ? "house"
+              : buildingType,
+          height: Math.max(6, Math.min(28, levels * 4 + 3))
+        }
+      });
+    }
+  });
+
+  return { roads, buildings };
+}
+
+function sampleWorld(center) {
+  const roads = { type: "FeatureCollection", features: [] };
+  const buildings = { type: "FeatureCollection", features: [] };
+
+  const roadLines = [
+    [meters(center.lat, center.lng, -230, 110), meters(center.lat, center.lng, 240, -110)],
+    [meters(center.lat, center.lng, -230, -70), meters(center.lat, center.lng, 230, 150)],
+    [meters(center.lat, center.lng, 120, -250), meters(center.lat, center.lng, 120, 250)]
+  ];
+
+  roadLines.forEach(coords => {
+    roads.features.push({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: coords.map(point => [point.lng, point.lat])
+      },
+      properties: {}
+    });
+  });
+
+  [[-120,40], [35,-30], [130,80], [-70,-140], [180,-90]].forEach(([east, north], index) => {
+    const centerPoint = meters(center.lat, center.lng, east, north);
+    const p1 = meters(centerPoint.lat, centerPoint.lng, -18, -12);
+    const p2 = meters(centerPoint.lat, centerPoint.lng, 18, -12);
+    const p3 = meters(centerPoint.lat, centerPoint.lng, 18, 12);
+    const p4 = meters(centerPoint.lat, centerPoint.lng, -18, 12);
+
+    buildings.features.push({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [p1.lng, p1.lat],
+          [p2.lng, p2.lat],
+          [p3.lng, p3.lat],
+          [p4.lng, p4.lat],
+          [p1.lng, p1.lat]
+        ]]
+      },
+      properties: { kind: "house", height: 8 + (index % 3) * 3 }
+    });
+  });
+
+  return { roads, buildings };
+}
+
+async function loadWorld(center, allowSampleFallback = false) {
+  const emptyWorld = {
+    roads: { type: "FeatureCollection", features: [] },
+    buildings: { type: "FeatureCollection", features: [] }
+  };
+
+  const query =
+    `[out:json][timeout:18];(` +
+    `way["highway"](around:420,${center.lat},${center.lng});` +
+    `way["building"](around:420,${center.lat},${center.lng});` +
+    `);out body;>;out skel qt;`;
+
+  const endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 14000);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: new URLSearchParams({ data: query }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        throw new Error(`Map request failed: ${response.status}`);
+      }
+
+      const parsed = overpassGeo(await response.json());
+
+      if (parsed.roads.features.length || parsed.buildings.features.length) {
+        map.getSource("roads").setData(parsed.roads);
+        map.getSource("buildings").setData(parsed.buildings);
+        return true;
+      }
+    } catch (error) {
+      console.warn("Map geometry endpoint failed:", endpoint, error);
+    }
+  }
+
+  /*
+     Important: if GPS worked, do NOT replace the user's real neighborhood
+     with fake sample streets. A plain grass field is less confusing than
+     displaying fictional roads over a real GPS position.
+  */
+  const fallback = allowSampleFallback ? sampleWorld(center) : emptyWorld;
+  map.getSource("roads").setData(fallback.roads);
+  map.getSource("buildings").setData(fallback.buildings);
+
+  return false;
+}
+
+async function connectFirebase() {
+  try {
+    const { getHouses } = await import("./firebase.js");
+    const houses = await getHouses();
+
+    realHouses = houses.filter(house =>
+      Number.isFinite(house.lat) &&
+      Number.isFinite(house.lng)
+    );
+
+    refreshMarkers();
+  } catch (error) {
+    console.info("Firebase house posts unavailable.", error);
+    realHouses = [];
+    refreshMarkers();
+  }
+}
+
+function startGPS() {
+  if (!navigator.geolocation) {
+    console.warn("Geolocation is unavailable. The page may be running without HTTPS.");
+    loadWorld(walker, true);
+    return;
+  }
+
+  if (gpsWatch !== null) return;
+
+  gpsWatch = navigator.geolocation.watchPosition(
+    async position => {
+      if (manualMode) return;
+
+      const firstFix = !map.__hasGpsFix;
+
+      walker = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+
+      map.__hasGpsFix = true;
+      updateAvatar(true);
+
+      if (firstFix) {
+        /*
+           Move to the actual GPS location immediately.
+           Then load real OSM geometry around those coordinates.
+        */
+        map.jumpTo({
+          center: [walker.lng, walker.lat],
+          zoom: WALK_ZOOM,
+          pitch: DEFAULT_PITCH,
+          bearing: -18
+        });
+
+        await loadWorld(walker, false);
+        await connectFirebase();
+      }
+    },
+    async error => {
+      console.warn("GPS unavailable.", error);
+
+      if (gpsWatch !== null) {
+        navigator.geolocation.clearWatch(gpsWatch);
+        gpsWatch = null;
+      }
+
+      /*
+         Only use the sample neighborhood if there was no GPS fix at all.
+         This keeps fake roads from appearing over a real location.
+      */
+      if (!map.__hasGpsFix) {
+        await loadWorld(walker, true);
+        await connectFirebase();
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 2000,
+      timeout: 15000
+    }
+  );
+}
+function moveVector(east, north) {
+  const enteringManualMode = !manualMode;
+  stopGPSForManualMovement();
+  walker = meters(walker.lat, walker.lng, east, north);
+  updateAvatar(true);
+
+  if (enteringManualMode && !map.__hasGpsFix) {
+    loadWorld(walker, true);
+  }
+}
+
+function animateFrame(timestamp) {
+  if (lastFrame) {
+    const seconds = Math.min((timestamp - lastFrame) / 1000, 0.08);
+    const speed = 16 * seconds;
+
+    const x =
+      (pressed.has("right") ? 1 : 0) -
+      (pressed.has("left") ? 1 : 0);
+
+    const y =
+      (pressed.has("up") ? 1 : 0) -
+      (pressed.has("down") ? 1 : 0);
+
+    if (x || y) {
+      const length = Math.hypot(x, y);
+      moveVector((x / length) * speed, (y / length) * speed);
+    } else {
+      updateAvatar(false);
+    }
+  }
+
+  lastFrame = timestamp;
+  requestAnimationFrame(animateFrame);
+}
+
+const keyMap = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  w: "up",
+  s: "down",
+  a: "left",
+  d: "right",
+  W: "up",
+  S: "down",
+  A: "left",
+  D: "right"
+};
+
+window.addEventListener("keydown", event => {
+  if (keyMap[event.key] && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+    event.preventDefault();
+    pressed.add(keyMap[event.key]);
+  }
+});
+
+window.addEventListener("keyup", event => {
+  if (keyMap[event.key]) {
+    pressed.delete(keyMap[event.key]);
+  }
+});
+
+window.addEventListener("blur", () => pressed.clear());
+
+function closePinPicker() {
+  pendingPin = null;
+  $("pinPicker").classList.remove("show");
+}
+
+function openPinPicker(clientX, clientY) {
+  const bounds = map.getCanvas().getBoundingClientRect();
+  const x = Math.max(0, Math.min(bounds.width, clientX - bounds.left));
+  const y = Math.max(0, Math.min(bounds.height, clientY - bounds.top));
+  const coordinates = map.unproject([x,y]);
+  pendingPin = {lat:coordinates.lat, lng:coordinates.lng};
+  const picker = $("pinPicker");
+  // Keep the picker fully on screen, even near the edges of a phone.
+  picker.style.left = `${Math.max(83, Math.min(innerWidth-83,clientX))}px`;
+  picker.style.top = `${Math.max(116,clientY)}px`;
+  picker.classList.add("show");
+}
+function addLocalPin(kind) {
+  if (!pendingPin) return;
+  localPins.push({...pendingPin,kind});
+  try { localStorage.setItem(PIN_STORAGE_KEY,JSON.stringify(localPins)); }
+  catch (error) { console.warn("Pin could not be saved on this device:",error); }
+  closePinPicker();
+  refreshMarkers();
+}
+$("addCandy").addEventListener("click", () => addLocalPin("candy"));
+$("addX").addEventListener("click", () => addLocalPin("x"));
+$("cancelPin").addEventListener("click", closePinPicker);
+
+/* The camera follows GPS position but never overwrites the user's bearing/pitch. */
+function setupMapGestures() {
+  const canvas = map.getCanvas();
+  const pointers = new Map();
+  let initialPinchDistance = 0;
+  let initialPitch = 0;
+  let holdTimer = null;
+  let holdFired = false;
+  let lastMouseClick = 0;
+  let lastMousePoint = null;
+  const clamp = (value,min,max) => Math.max(min,Math.min(max,value));
+  const clearHold = () => { if (holdTimer) clearTimeout(holdTimer); holdTimer=null; };
+  const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+  const makePinchBaseline = () => {
+    const [a,b] = [...pointers.values()];
+    initialPinchDistance = distance(a,b);
+    initialPitch = map.getPitch();
+  };
+  canvas.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    closePinPicker();
+    // MapLibre's default gestures are disabled to avoid competing movements.
+    canvas.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId,{x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY});
+    holdFired = false;
+    clearHold();
+    if (pointers.size === 1 && event.pointerType !== "mouse") {
+      const x=event.clientX,y=event.clientY;
+      holdTimer=setTimeout(() => {
+        if (pointers.size === 1) {
+          holdFired=true;
+          openPinPicker(x,y);
+        }
+      },550);
+    }
+    if (pointers.size === 2) makePinchBaseline();
+  });
+  canvas.addEventListener("pointermove", event => {
+    const pointer=pointers.get(event.pointerId);
+    if (!pointer) return;
+    const dx=event.clientX-pointer.x;
+    pointer.x=event.clientX;
+    pointer.y=event.clientY;
+    if (distance({x:pointer.startX,y:pointer.startY},pointer)>12) clearHold();
+    if (holdFired) return;
+    if (pointers.size === 1) {
+      // Horizontal finger drag or mouse drag rotates the viewpoint.
+      if (Math.abs(dx)>0) map.setBearing(map.getBearing()+dx*0.48);
+    } else if (pointers.size === 2) {
+      clearHold();
+      const [a,b]=[...pointers.values()];
+      // Pinch apart = lower viewing angle; pinch together = more top-down.
+      map.setPitch(clamp(initialPitch + (distance(a,b)-initialPinchDistance)*0.10,
+        MIN_PITCH, MAX_PITCH));
+    }
+  });
+  const finishPointer = event => {
+    const pointer=pointers.get(event.pointerId);
+    if (!pointer) return;
+    const travel=distance({x:pointer.startX,y:pointer.startY},pointer);
+    const wasSingle=pointers.size===1;
+    pointers.delete(event.pointerId);
+    clearHold();
+    if (pointers.size===1) {
+      const remaining=[...pointers.values()][0];
+      remaining.startX=remaining.x; remaining.startY=remaining.y;
+    }
+    if (event.type==="pointerup" && wasSingle && travel<7 && !holdFired &&
+        clickedGroundPin(event.clientX,event.clientY)) {
+      lastMouseClick = 0;
+      return;
+    }
+    if (event.type==="pointerup" && event.pointerType==="mouse" && wasSingle && travel<7 && !holdFired) {
+      const now=performance.now();
+      const point={x:event.clientX,y:event.clientY};
+      if (now-lastMouseClick<420 && lastMousePoint && distance(point,lastMousePoint)<25) {
+        openPinPicker(event.clientX,event.clientY);
+        lastMouseClick=0;
+      } else {lastMouseClick=now;lastMousePoint=point;}
+    }
+  };
+  canvas.addEventListener("pointerup", finishPointer);
+  canvas.addEventListener("pointercancel",finishPointer);
+  canvas.addEventListener("contextmenu",event=>event.preventDefault());
+}
+
+map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources: {},
+    layers: []
+  },
+  center: [walker.lng, walker.lat],
+  zoom: WALK_ZOOM,
+  minZoom: WALK_ZOOM,
+  maxZoom: WALK_ZOOM,
+  pitch: DEFAULT_PITCH,
+  minPitch: MIN_PITCH,
+  bearing: -18,
+  antialias: true,
+  maxPitch: MAX_PITCH,
+  scrollZoom: false,
+  boxZoom: false,
+  keyboard: false,
+  touchPitch: false,
+  dragPan: false,
+  dragRotate: false,
+  touchZoomRotate: false,
+  doubleClickZoom: false
+});
+
+map.on("load", async () => {
+  setupLayers();
+  setupGroundPins();
+  setupMapGestures();
+  refreshMarkers();
+
+  avatarMarker = new maplibregl.Marker({
+    element: buildAvatarElement(),
+    anchor: "bottom",
+    pitchAlignment: "viewport", // The figure stands upright at its mapped feet.
+    rotationAlignment: "viewport"
+  })
+  .setLngLat([walker.lng, walker.lat])
+  .addTo(map);
+  updateAvatar(false);
+
+  /*
+     GPS is the normal starting point. We intentionally do not load the
+     sample neighborhood here because it can flash over the user's actual
+     location before real geometry finishes loading.
+  */
+  startGPS();
+  requestAnimationFrame(animateFrame);
+});
+
+$("closeCard").addEventListener("click", closeCard);
+$("dismissBtn").addEventListener("click", closeCard);
+
+$("centerBtn").addEventListener("click", () => {
+  if (selected) {
+    following = false;
+    map.flyTo({
+      center: [selected.lng, selected.lat],
+      zoom: WALK_ZOOM,
+      pitch: map.getPitch(),
+      duration: 900
+    });
+  }
+
+  closeCard();
+});
+</script>
+</body>
+</html>
