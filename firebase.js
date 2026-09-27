@@ -7,6 +7,7 @@ import {
     addDoc,
     getDocs,
     updateDoc,
+    deleteDoc,
     doc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
@@ -75,4 +76,8 @@ export async function saveHouse(house) {
     });
 
     return document.id;
+}
+
+export async function deleteHouse(id) {
+    await deleteDoc(doc(db, "houses", id));
 }

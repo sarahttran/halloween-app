@@ -179,7 +179,7 @@
     
     <!-- Linking the database-->
     <script type="module">
-        import { getHouses, saveHouse } from "./firebase.js";
+        import { getHouses, saveHouse, deleteHouse } from "./firebase.js";
 
         // Map setup
         const map = L.map("map").setView([39.254, -76.714], 18);
@@ -377,7 +377,59 @@ if (navigator.geolocation) {
             editButton.className = "popup-edit";
             editButton.textContent = "Update info";
             editButton.addEventListener("click", () => openHouseForm(house, index));
-            content.append(editButton);
+                    
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "popup-delete";
+            deleteButton.innerHTML = "&#128465;";
+            deleteButton.title = "Delete pin";
+            deleteButton.setAttribute("aria-label", "Delete pin");
+
+            deleteButton.addEventListener("click", async () => {
+            
+    const deleteDialog = document.getElementById("deleteDialog");
+
+    deleteDialog.showModal();
+
+    const confirmed = await new Promise(resolve => {
+        document.getElementById("confirmDelete").onclick = () => {
+            deleteDialog.close();
+            resolve(true);
+        };
+
+        document.getElementById("cancelDelete").onclick = () => {
+            deleteDialog.close();
+            resolve(false);
+        };
+
+        deleteDialog.oncancel = () => resolve(false);
+    });
+
+    if (!confirmed) return;
+
+
+                deleteButton.disabled = true;
+
+                try {
+                    await deleteHouse(house.id);
+
+                    savedPins = savedPins.filter(pin => pin.id !== house.id);
+
+                    map.closePopup();
+                    refreshPins();
+
+                } catch (error) {
+                    console.error("Delete failed:", error);
+                    alert("Could not delete this pin.");
+                    deleteButton.disabled = false;
+                }
+            });
+
+            const popupActions = document.createElement("div");
+            popupActions.className = "popup-actions";
+            popupActions.append(editButton, deleteButton);
+            content.append(popupActions);
+
             marker.bindPopup(content);
             return marker;
         }
@@ -623,6 +675,19 @@ if (navigator.geolocation) {
 
 </dialog>
 
+<dialog id="deleteDialog" class="house-dialog delete-dialog">
+    <div class="delete-content">
+        <h2>Delete this pin?</h2>
+        <p>Are you sure you want to remove this candy corn from the map?</p>
+
+        <div class="dialog-actions">
+            <button id="cancelDelete" type="button"
+                    class="button button-white">Cancel</button>
+            <button id="confirmDelete" type="button"
+                    class="button delete-confirm">Delete</button>
+        </div>
+    </div>
+</dialog>
 
 <script>
     const safetyDialog =
