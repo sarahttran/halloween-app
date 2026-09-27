@@ -16,26 +16,31 @@
     <!-- Navbar -->
     <header class="navbar">
         <div class="container nav-content">
-            <a href="#home" class="logo">🎃 TrackYourTreat</a>
-            <nav class="nav-links" aria-label="Main navigation">
-                <a href="#home">Home</a>
-                <a href="#map-section">Map</a>
-                <a href="#how-it-works">How It Works</a>
-                <a href="#map-section" class="nav-button">🍬 View Map</a>
-            </nav>
+
+            <a href="#home" class="logo">
+                🎃 TrackYourTreat
+            </a>
+
+            <div class="nav-menu">
+                <button class="menu-toggle"
+                        type="button"
+                        aria-label="Toggle navigation"
+                        aria-expanded="false"
+                        aria-controls="dropdownMenu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <nav id="dropdownMenu" class="dropdown-menu"
+                    aria-label="Main navigation">
+                    <a href="#map-section">Map</a>
+                    <a href="#how-it-works">How It Works</a>
+                </nav>
+            </div>
+
         </div>
     </header>
-
-    <!-- Welcome -->
-    <!-- Welcome -->
-<section class="hero" id="home">
-    <h1 class="site-title">
-         Track <span>Your</span> Treat! 
-    </h1>
-    <p class="site-subtitle">
-        Find the sweetest stops in your neighborhood!
-    </p>
-</section>
 
     <!-- Map -->
     <section class="map-section" id="map-section">
@@ -49,7 +54,7 @@
                 <!-- Neighborhood search -->
                 <form id="searchForm">
                     <input id="searchInput" type="search" placeholder="Search a neighborhood or ZIP code"
-                           aria-label="Neighborhood or ZIP code" required>
+                        aria-label="Neighborhood or ZIP code" required>
                     <button type="submit">Search</button>
                 </form>
                 <p id="searchMessage" role="status"></p>
@@ -61,7 +66,40 @@
                 </div>
                 <p id="pinMessage" role="status"></p>
 
-                <div id="map"></div>
+                
+                <div class="map-wrap">
+                    <div id="map"></div>
+                
+                <div id="candyLegend" class="candy-legend">
+                    <div class="legend-items">
+                        <span class="legend-entry">
+                            <span class="legend-icon status-soon"></span>
+                            Starting soon
+                        </span>
+
+                        <span class="legend-entry">
+                            <span class="legend-icon status-active"></span>
+                            Handing out candy
+                        </span>
+
+                        <span class="legend-entry">
+                            <span class="legend-icon status-out"></span>
+                            Out of candy
+                        </span>
+
+                        <span class="legend-entry">
+                            <span class="legend-icon status-low"></span>
+                            Running low
+                        </span>
+                    </div>
+
+                    <button id="legendToggle" type="button"
+                            aria-label="Collapse candy legend"
+                            aria-expanded="true">‹</button>
+                </div>
+
+                </div>
+
                 <div class="map-footer">
                     Click Place Pin, move the candy corn to your house, then click the map to add it.
                 </div>
@@ -72,7 +110,7 @@
     <!-- How it works -->
     <section class="how-section" id="how-it-works">
         <div class="container">
-            <h2>How it works ✨</h2>
+            <h2>How it works</h2>
             <div class="steps">
                 <div class="step-card">
                     <div class="step-icon">🗺️</div>
@@ -208,6 +246,24 @@ if (navigator.geolocation) {
             popupAnchor: [0, -52]
         });
     
+        
+        function getStatusIcon(status) {
+            const classes = {
+                "Starting soon": "status-soon",
+                "Handing out candy": "status-active",
+                "Out of candy": "status-out",
+                "Running low": "status-low"
+            };
+
+            return L.divIcon({
+                className: "candy-corn-icon " +
+                    (classes[status] || "status-active"),
+                html: candyCornSvg,
+                iconSize: [52, 70],
+                iconAnchor: [26, 65],
+                popupAnchor: [0, -52]
+            });
+        }
 
         // Neighborhood search - unchanged behavior.
         const searchForm = document.getElementById("searchForm");
@@ -300,7 +356,9 @@ if (navigator.geolocation) {
         }
 
         function displayPin(house, index) {
-            const marker = L.marker([house.lat, house.lng], { icon: candyCornIcon }).addTo(map);
+            const marker = L.marker([house.lat, house.lng], {
+                icon: getStatusIcon(house.status)
+                }).addTo(map);
             const content = document.createElement("div");
             content.className = "house-popup";
             const title = document.createElement("strong");
@@ -323,6 +381,25 @@ if (navigator.geolocation) {
             marker.bindPopup(content);
             return marker;
         }
+
+        document.querySelectorAll(".legend-icon").forEach(icon => {
+            icon.innerHTML = candyCornSvg;
+        });
+
+        // Expand or collapse the floating legend.
+        const candyLegend = document.getElementById("candyLegend");
+        const legendToggle = document.getElementById("legendToggle");
+
+        legendToggle.addEventListener("click", () => {
+            const collapsed = candyLegend.classList.toggle("collapsed");
+
+            legendToggle.textContent = collapsed ? "›" : "‹";
+            legendToggle.setAttribute("aria-expanded", String(!collapsed));
+            legendToggle.setAttribute(
+                "aria-label",
+                collapsed ? "Expand candy legend" : "Collapse candy legend"
+            );
+        });
 
         function refreshPins() {
             houseMarkers.forEach(marker => map.removeLayer(marker));
@@ -563,6 +640,43 @@ if (navigator.geolocation) {
     closeSafetyButton.addEventListener("click", function() {
         sessionStorage.setItem("safetyAcknowledged", "true");
         safetyDialog.close();
+    });
+</script>
+
+
+<script>
+    const navMenu = document.querySelector(".nav-menu");
+    const menuToggle = document.querySelector(".menu-toggle");
+
+    menuToggle.addEventListener("click", () => {
+        const isOpen = navMenu.classList.toggle("open");
+        menuToggle.setAttribute("aria-expanded", isOpen);
+    });
+
+    // Close menu after selecting a link.
+    document.querySelectorAll(".dropdown-menu a")
+        .forEach(link => {
+            link.addEventListener("click", () => {
+                navMenu.classList.remove("open");
+                menuToggle.setAttribute("aria-expanded", "false");
+            });
+        });
+
+    // Close when clicking outside the navbar menu.
+    document.addEventListener("click", event => {
+        if (!navMenu.contains(event.target)) {
+            navMenu.classList.remove("open");
+            menuToggle.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    // Close with Escape.
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            navMenu.classList.remove("open");
+            menuToggle.setAttribute("aria-expanded", "false");
+            menuToggle.focus();
+        }
     });
 </script>
 

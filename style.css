@@ -47,12 +47,13 @@ button {
     margin: auto;
 }
 
+
 /* NAVBAR */
 .navbar {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--white);
+    background: white;
     border-bottom: 2px solid var(--border);
     box-shadow: 0 3px 12px rgba(56, 35, 79, 0.05);
 }
@@ -69,37 +70,98 @@ button {
     color: var(--purple);
     font-family: "Baloo 2", sans-serif;
     font-weight: 800;
-    font-size: 27px;
+    font-size: clamp(20px, 3vw, 27px);
     text-decoration: none;
     white-space: nowrap;
 }
 
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+/* Hamburger */
+.nav-menu {
+    position: relative;
 }
 
-.nav-links a {
-    color: var(--dark-purple);
-    text-decoration: none;
-    font-weight: 800;
-    padding: 9px 18px;
-    border-radius: 30px;
+.menu-toggle {
+    width: 44px;
+    height: 44px;
+    padding: 9px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.menu-toggle span {
+    width: 27px;
+    height: 3px;
+    background: var(--purple);
     transition: 0.2s;
 }
 
-.nav-links a:hover {
+/* Vertical dropdown */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 190px;
+
+    display: none;
+    flex-direction: column;
+
+    background: white;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 20px rgba(56, 35, 79, 0.15);
+}
+
+.dropdown-menu a {
+    padding: 12px 16px;
+    color: var(--dark-purple);
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.dropdown-menu a:hover {
     background: var(--light-purple);
 }
 
-.nav-links .nav-button {
+.dropdown-menu .dropdown-highlight {
     background: var(--purple);
-    color: var(--white);
+    color: white;
 }
 
-.nav-links .nav-button:hover {
+.dropdown-menu .dropdown-highlight:hover {
     background: var(--dark-purple);
+}
+
+/* Hover on desktop; click also supported */
+@media (hover: hover) {
+    .nav-menu:hover .dropdown-menu {
+        display: flex;
+    }
+}
+
+.nav-menu:focus-within .dropdown-menu,
+.nav-menu.open .dropdown-menu {
+    display: flex;
+}
+
+/* Mobile */
+@media (max-width: 800px) {
+    .nav-content {
+        flex-direction: row;
+        min-height: 65px;
+        padding: 8px 0;
+    }
+
+    .dropdown-menu {
+        width: 180px;
+    }
 }
 
 /* WELCOME SECTION */
@@ -226,6 +288,7 @@ button {
 
 .section-heading h2 {
     font-size: 36px;
+    font-family: "Baloo 2", cursive;
     margin: 0;
 }
 
@@ -344,7 +407,6 @@ button {
         brightness(105%)
         contrast(90%);
 }
-  
 
 .map-footer {
     padding: 12px 5px 0;
@@ -352,50 +414,44 @@ button {
     font-size: 13px;
 }
 
+
 /* HOW IT WORKS */
 .how-section {
-    padding: 0 0 55px;
+    padding: 10px 0 25px;
 }
 
 .how-section h2 {
-    font-size: 35px;
-    margin: 0 0 18px;
+    font-size: 26px;
+    margin: 0 0 12px;
 }
 
 .steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
+    gap: 12px;
 }
 
 .step-card {
-    padding: 25px;
-    background: var(--white);
+    padding: 12px 16px;
     border: 2px solid var(--border);
     border-radius: 5px;
-}
-
-.step-card:nth-child(2) {
-    background: var(--pink);
-}
-
-.step-card:nth-child(3) {
-    background: var(--green);
+    background: var(--white);
 }
 
 .step-icon {
-    font-size: 36px;
+    font-size: 24px;
 }
 
 .step-card h3 {
-    font-size: 23px;
-    margin: 8px 0;
+    font-size: 17px;
+    margin: 5px 0;
 }
 
 .step-card p {
-    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
     margin: 0;
-    line-height: 1.6;
+    color: var(--muted);
 }
 
 /* FOOTER */
@@ -536,15 +592,7 @@ footer {
     font-size: 17px;
     color: #776a80;
     margin: 12px auto 0;
-    text-align: center;
 }
-
-.site-subtitle {
-    font-size: 17px;
-    color: #776a80;
-    margin: 12px auto 0;
-}
-
 
 /* HALLOWEEN SAFETY POPUP */
 
@@ -605,4 +653,166 @@ footer {
 
 #closeSafetyDialog:hover {
     background: #ff963c;
+}
+
+/* Candy status pins */
+.candy-corn-icon.status-soon,
+.legend-icon.status-soon {
+    filter: drop-shadow(0 0 5px #a76bdc);
+}
+
+.candy-corn-icon.status-out,
+.legend-icon.status-out {
+    opacity: 0.3;
+}
+
+.candy-corn-icon.status-low,
+.legend-icon.status-low {
+    filter: drop-shadow(0 0 6px #ff3030);
+}
+
+/* Floating map legend */
+.map-wrap {
+    position: relative;
+}
+
+
+/* Small rectangular legend */
+.candy-legend {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 500;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    max-width: calc(100% - 20px);
+    padding: 5px 8px;
+
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #65428a;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+    font-family: "Nunito", sans-serif;
+    font-size: 11px;
+    color: #38234f;
+}
+
+.legend-items {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+}
+
+.legend-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.legend-icon {
+    display: inline-flex;
+    width: 16px;
+    height: 23px;
+}
+
+.legend-icon svg {
+    width: 16px;
+    height: 23px;
+}
+
+#legendToggle {
+    width: 23px;
+    height: 25px;
+    padding: 0;
+
+    background: white;
+    border: 0;
+    border-left: 1px solid #d6c9df;
+    border-radius: 0;
+
+    color: #65428a;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.candy-legend.collapsed .legend-items {
+    display: none;
+}
+
+.legend-items {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.legend-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 38px;
+}
+
+.legend-icon svg {
+    width: 27px;
+    height: 38px;
+}
+
+#legendToggle {
+    border: 0;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    background: #f0e3ff;
+    color: #65428a;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.candy-legend.collapsed .legend-items {
+    display: none;
+}
+
+
+/* Keep logo left and hamburger right on ALL screen sizes */
+.nav-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-left: 10px;   /* Moves logo inward */
+    padding-right: 10px;  /* Moves hamburger inward */
+}
+
+.logo {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: clamp(18px, 4vw, 27px);
+    white-space: nowrap;
+}
+
+.nav-menu {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.menu-toggle {
+    flex-shrink: 0;
+}
+
+/* Override the old mobile navbar styling */
+@media (max-width: 800px) {
+    .nav-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
 }
