@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>TrackYourTreat • Walking Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+:root{
+  --ink:#f8efe4; --plum:#6d4a97; --plum-dark:#4d306f; --cream:#fff6ea;
+  --gold:#ffc965; --orange:#ff974e; --green:#9ecb7f; --road:#f6ead5;
+  --sky-top:#24153d; --sky-mid:#4a2a67; --sky-glow:#ff9656;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Nunito,sans-serif;background:#87b76c}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #ffcf77;outline-offset:3px}
+#map{position:absolute;inset:0}
+.maplibregl-control-container{display:none}
+
+.sky{position:absolute;inset:0 0 auto 0;height:42vh;pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 110%, rgba(255,152,90,.55), transparent 32%),
+    radial-gradient(circle at 15% 22%, rgba(255,255,255,.08), transparent 12%),
+    linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 46%,rgba(91,63,121,.45) 70%,transparent 100%);
+}
+.sky::before,.sky::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.8);filter:blur(.5px)}
+.sky::before{width:3px;height:3px;top:18%;left:20%;box-shadow:120px 35px 0 rgba(255,255,255,.75),260px -8px 0 rgba(255,255,255,.5),430px 60px 0 rgba(255,255,255,.8),630px 22px 0 rgba(255,255,255,.6),780px 90px 0 rgba(255,255,255,.8)}
+.sky::after{width:2px;height:2px;top:8%;left:8%;box-shadow:90px 28px 0 rgba(255,255,255,.45),330px 90px 0 rgba(255,255,255,.65),560px 15px 0 rgba(255,255,255,.55),720px 48px 0 rgba(255,255,255,.65),920px 16px 0 rgba(255,255,255,.5)}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 45%, transparent 35%, rgba(19,10,34,.1) 72%, rgba(19,10,34,.18) 100%)}
+
+.brand-chip{position:absolute;z-index:8;left:16px;top:max(16px, env(safe-area-inset-top));display:flex;align-items:center;gap:10px;
+  padding:10px 15px;border-radius:999px;background:rgba(255,248,238,.94);color:#40255d;border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 10px 24px rgba(25,10,50,.18);backdrop-filter:blur(10px)}
+.brand-chip .icon{width:36px;height:36px;border-radius:14px;display:grid;place-items:center;background:#ffe1b2;font-size:22px}
+.brand-chip strong{font-family:'Baloo 2',cursive;font-size:26px;line-height:1;letter-spacing:-.4px}
+.brand-chip strong span{color:#f08a38}
+.brand-chip small{display:block;font-size:10px;font-weight:900;letter-spacing:2px;color:#8668a0;text-transform:uppercase;margin-top:2px}
+
+.gps-pill{position:absolute;z-index:8;left:50%;bottom:20px;transform:translateX(-50%);max-width:min(480px,calc(100% - 130px));
+  background:rgba(255,248,238,.95);color:#4f356c;border:2px solid rgba(255,255,255,.95);box-shadow:0 10px 24px rgba(25,10,50,.16);
+  border-radius:999px;padding:9px 16px;font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gps-pill.error{color:#ad573f}
+
+.tools{position:absolute;z-index:9;right:14px;bottom:max(14px, env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.tool{border:0;border-radius:18px;background:rgba(255,248,238,.94);color:#5b3b7d;border:2px solid rgba(255,255,255,.92);
+  box-shadow:0 8px 20px rgba(25,10,50,.18);backdrop-filter:blur(10px);display:grid;place-items:center}
+.tool.icon{width:48px;height:48px;font-size:20px}
+.tool.icon.small{width:42px;height:42px;font-size:18px}
+.tool.active{background:#6e4a98;color:#fff}
+.attribution{font-size:11px;line-height:1.2;padding:9px 11px;text-align:right;max-width:190px}
+.attribution a{color:#6e4a98}
+
+.avatar-marker{width:90px;height:156px;pointer-events:none;filter:drop-shadow(0 12px 8px rgba(27,15,45,.28))}
+.avatar-marker .ring{position:absolute;left:0;right:0;bottom:0;margin:auto;width:86px;height:28px;border-radius:50%;background:rgba(163,235,255,.14);border:2px solid rgba(255,255,255,.5);box-shadow:0 0 0 10px rgba(163,235,255,.08)}
+.avatar-marker .body{position:absolute;left:11px;bottom:8px;width:68px;height:126px;transform-origin:50% 100%;animation:bob .9s ease-in-out infinite alternate}
+.avatar-marker.idle .body{animation-duration:2.3s}
+.avatar-marker .hatCone{position:absolute;top:-20px;left:17px;width:38px;height:44px;background:#68458a;clip-path:polygon(45% 0,100% 100%,0 100%);transform:rotate(2deg)}
+.avatar-marker .hatBrim{position:absolute;top:12px;left:6px;width:58px;height:14px;border-radius:40px;background:#59387a;box-shadow:0 4px 0 #321f49}
+.avatar-marker .hatBand{position:absolute;top:7px;left:18px;width:35px;height:7px;border-radius:9px;background:#ffae42;transform:rotate(-6deg)}
+.avatar-marker .hair{position:absolute;left:13px;top:25px;width:43px;height:44px;border-radius:18px 18px 22px 22px;background:#69462f}
+.avatar-marker .face{position:absolute;left:16px;top:30px;width:39px;height:37px;border-radius:46%;background:#ffd2a6;border:2px solid #e7ab87}
+.avatar-marker .face:before,.avatar-marker .face:after{content:"";position:absolute;top:16px;width:4px;height:5px;border-radius:50%;background:#4a3640}
+.avatar-marker .face:before{left:9px}.avatar-marker .face:after{right:9px}
+.avatar-marker .smile{position:absolute;top:55px;left:31px;width:9px;height:5px;border-bottom:2px solid #9c5d5a;border-radius:0 0 8px 8px}
+.avatar-marker .shirt{position:absolute;left:16px;top:68px;width:40px;height:38px;border-radius:14px 14px 7px 7px;background:#ef8f45;border:3px solid #70488b;box-shadow:inset 0 0 0 6px #f4b467}
+.avatar-marker .arm{position:absolute;top:77px;width:14px;height:31px;border-radius:9px;background:#ffd2a6;border-top:14px solid #7450a0;transform-origin:top}
+.avatar-marker .arm.left{left:4px;animation:swing .7s infinite alternate;transform:rotate(15deg)}
+.avatar-marker .arm.right{right:4px;animation:swing .7s infinite alternate-reverse;transform:rotate(-15deg)}
+.avatar-marker .leg{position:absolute;top:98px;width:14px;height:25px;border-radius:6px;background:#4e456f;transform-origin:top;animation:step .7s infinite alternate}
+.avatar-marker .leg.left{left:20px}.avatar-marker .leg.right{right:18px;animation-direction:alternate-reverse}
+.avatar-marker .shoe{position:absolute;bottom:-4px;width:21px;height:9px;left:-3px;border-radius:8px;background:#fff8e8}
+.avatar-marker.idle .arm,.avatar-marker.idle .leg{animation-play-state:paused}
+@keyframes step{from{transform:rotate(-18deg)}to{transform:rotate(22deg)}}
+@keyframes swing{from{transform:rotate(-18deg)}to{transform:rotate(24deg)}}
+@keyframes bob{to{transform:translateY(-4px)}}
+
+.post-marker{position:relative;width:48px;height:58px;cursor:pointer;filter:drop-shadow(0 8px 7px rgba(35,18,58,.28));transition:transform .18s ease, filter .18s ease}
+.post-marker:hover{transform:translateY(-2px) scale(1.03);filter:drop-shadow(0 10px 9px rgba(35,18,58,.35))}
+.post-marker .bubble{position:absolute;inset:0;display:grid;place-items:center;border-radius:22px 22px 22px 5px;background:#fffaf3;border:3px solid rgba(255,255,255,.95);transform:rotate(-8deg)}
+.post-marker.low .bubble{background:#fff2bf}.post-marker.out .bubble{background:#ece6ee;filter:grayscale(.7)}
+.post-marker .emoji{font-size:24px;line-height:1}.post-marker .stem{position:absolute;left:12px;bottom:-10px;width:14px;height:16px;background:#fffaf3;clip-path:polygon(0 0,100% 0,0 100%);transform:skewX(-16deg)}
+.post-marker.out .stem{background:#ece6ee}
+
+.card{position:absolute;z-index:10;left:16px;bottom:16px;width:min(350px,calc(100% - 92px));background:rgba(255,248,238,.97);border:2px solid rgba(255,255,255,.95);
+  border-radius:24px;padding:18px 18px 16px;box-shadow:0 16px 34px rgba(25,10,50,.22);display:none}
+.card.show{display:block}
+.card .chip{display:inline-block;font-size:11px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;color:#6b4a8f;background:#f0e3fa;border-radius:999px;padding:6px 10px;margin-bottom:10px}
+.card h2{margin:0 0 6px;font-family:'Baloo 2',cursive;font-size:28px;line-height:1.05;color:#40255d}
+.card p{margin:0 0 12px;color:#5f476d;line-height:1.45;font-size:14px}
+.card .actions{display:flex;gap:8px;flex-wrap:wrap}
+.card button{border:0;border-radius:14px;padding:11px 14px;font-weight:900}
+.card .primary{background:#6e4a98;color:#fff}.card .secondary{background:#f0e3fa;color:#5c3e7e}
+.card .close{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:#f3e8fb;color:#5b3b7d;padding:0}
+
+.info{position:absolute;z-index:11;inset:auto 16px 16px 16px;margin:auto;max-width:420px;background:rgba(255,248,238,.98);border:2px solid #fff;border-radius:24px;padding:20px;box-shadow:0 16px 40px rgba(25,10,50,.26);display:none}
+.info.show{display:block}
+.info h3{margin:0 0 8px;font-family:'Baloo 2',cursive;font-size:26px;color:#40255d}
+.info p,.info li{font-size:14px;line-height:1.45;color:#5f476d}
+.info ul{margin:10px 0 14px;padding-left:18px}
+.info button{border:0;border-radius:14px;background:#6e4a98;color:#fff;padding:12px 14px;font-weight:900;width:100%}
+
+@media (max-width:640px){
+  .brand-chip strong{font-size:21px}
+  .brand-chip small{font-size:9px;letter-spacing:1.6px}
+  .tool.icon{width:44px;height:44px}
+  .tool.icon.small{width:38px;height:38px}
+  .card{width:min(330px,calc(100% - 86px))}
+  .gps-pill{font-size:11px;max-width:calc(100% - 90px)}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="sky"></div>
+<div class="vignette"></div>
+
+<div class="brand-chip" aria-label="TrackYourTreat Halloween walking mode">
+  <div class="icon">🎃</div>
+  <div>
+    <strong>TrackYour<span>Treat</span></strong>
+    <small>Halloween Walking Mode</small>
+  </div>
+</div>
+
+<div id="gpsStatus" class="gps-pill">Finding your location…</div>
+
+<div class="tools">
+  <button id="gpsBtn" class="tool icon active" aria-label="GPS follow mode">◎</button>
+  <button id="followBtn" class="tool icon active" aria-label="Follow avatar">⌖</button>
+  <button id="rotateBtn" class="tool icon small" aria-label="Rotate camera">↻</button>
+  <button id="tiltBtn" class="tool icon small" aria-label="Switch camera angle">◫</button>
+  <button id="infoBtn" class="tool icon small" aria-label="About this walking mode">i</button>
+  <div class="tool attribution">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></div>
+</div>
+
+<section id="card" class="card" aria-live="polite">
+  <button id="closeCard" class="close" aria-label="Close">×</button>
+  <span id="cardChip" class="chip">Candy stop</span>
+  <h2 id="cardTitle">Candy stop</h2>
+  <p id="cardDesc"></p>
+  <div class="actions">
+    <button id="centerBtn" class="primary">Center on stop</button>
+    <button id="dismissBtn" class="secondary">Close</button>
+  </div>
+</section>
+
+<section id="info" class="info" aria-live="polite">
+  <h3>Walking Mode</h3>
+  <p>This version keeps the Halloween look minimal: real streets and buildings, your own avatar, and flat candy markers for participating houses.</p>
+  <ul>
+    <li>GPS is used by default when available.</li>
+    <li>Markers come from your shared Firebase house posts.</li>
+    <li>If GPS is blocked, the map stays centered near UMBC for testing.</li>
+  </ul>
+  <button id="closeInfo">Got it</button>
+</section>
+
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let map, avatarMarker, selected=null;
+let walker = {lat:39.254117, lng:-76.711983};
+let following = true;
+let gpsWatch = null;
+let realHouses = [];
+let spotMarkers = [];
+let gpsReady = false;
+
+function setStatus(text, isError=false){
+  const el = $('gpsStatus');
+  el.textContent = text;
+  el.classList.toggle('error', isError);
+}
+
+function meters(lat,lng,east,north){
+  const dLat = north / 111111;
+  const dLng = east / (111111 * Math.cos(lat * Math.PI / 180));
+  return {lat: lat + dLat, lng: lng + dLng};
+}
+
+function buildAvatarElement(){
+  const el = document.createElement('div');
+  el.className = 'avatar-marker idle';
+  el.innerHTML = `
+    <div class="ring"></div>
+    <div class="body">
+      <div class="hatCone"></div><div class="hatBrim"></div><div class="hatBand"></div>
+      <div class="hair"></div><div class="face"></div><div class="smile"></div>
+      <div class="arm left"></div><div class="arm right"></div><div class="shirt"></div>
+      <div class="leg left"><div class="shoe"></div></div>
+      <div class="leg right"><div class="shoe"></div></div>
+    </div>`;
+  return el;
+}
+
+function postMarkerElement(house){
+  const el = document.createElement('div');
+  const stateClass = house.status === 'Running low' ? 'low' : house.status === 'Out of candy' ? 'out' : '';
+  const emoji = house.status === 'Out of candy' ? '🚫' : house.status === 'Running low' ? '🎃' : '🍬';
+  el.className = `post-marker ${stateClass}`;
+  el.tabIndex = 0;
+  el.role = 'button';
+  el.setAttribute('aria-label', house.address || 'Candy stop');
+  el.innerHTML = `<div class="bubble"><span class="emoji">${emoji}</span></div><div class="stem"></div>`;
+  el.addEventListener('click', ()=>showCard(house));
+  el.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); showCard(house); }
+  });
+  return el;
+}
+
+function refreshMarkers(){
+  spotMarkers.forEach(m => m.remove());
+  spotMarkers = [];
+  realHouses.forEach(house => {
+    const marker = new maplibregl.Marker({element: postMarkerElement(house), anchor:'bottom'})
+      .setLngLat([house.lng, house.lat]).addTo(map);
+    spotMarkers.push(marker);
+  });
+}
+
+function showCard(house){
+  selected = house;
+  $('cardChip').textContent = house.status || 'Candy stop';
+  $('cardTitle').textContent = house.address || 'Candy stop';
+  $('cardDesc').textContent = house.comments || 'Community-submitted Halloween stop.';
+  $('card').classList.add('show');
+}
+
+function closeCard(){ $('card').classList.remove('show'); }
+
+function updateAvatar(moving=false){
+  if(!avatarMarker) return;
+  const avatarEl = avatarMarker.getElement();
+  if(avatarEl) avatarEl.classList.toggle('idle', !moving);
+  avatarMarker.setLngLat([walker.lng, walker.lat]);
+  if(following){
+    map.easeTo({center:[walker.lng, walker.lat], duration: 500, essential:true});
+  }
+}
+
+function setupLayers(){
+  map.addSource('roads', {type:'geojson', data:{type:'FeatureCollection', features:[]}});
+  map.addSource('buildings', {type:'geojson', data:{type:'FeatureCollection', features:[]}});
+
+  map.addLayer({
+    id:'ground', type:'background', paint:{'background-color':'#95c677'}
+  });
+  map.addLayer({
+    id:'roads-line', type:'line', source:'roads',
+    paint:{'line-color':'#f4e8d1','line-width':['interpolate',['linear'],['zoom'],14,2.5,18,9],'line-opacity':0.96}
+  });
+  map.addLayer({
+    id:'roads-glow', type:'line', source:'roads',
+    paint:{'line-color':'rgba(255,252,244,.28)','line-width':['interpolate',['linear'],['zoom'],14,5,18,13]}
+  }, 'roads-line');
+  map.addLayer({
+    id:'buildings-fill', type:'fill-extrusion', source:'buildings',
+    paint:{
+      'fill-extrusion-color':['match',['coalesce',['get','kind'],'house'],'house','#c3916a','apartment','#b28e9d','commercial','#a58f73','#bb936e'],
+      'fill-extrusion-height':['coalesce',['get','height'],8],
+      'fill-extrusion-base':0,
+      'fill-extrusion-opacity':0.94,
+      'fill-extrusion-vertical-gradient':true
+    }
+  });
+}
+
+function overpassGeo(json){
+  const nodes = new Map();
+  (json.elements || []).forEach(el => { if(el.type === 'node') nodes.set(el.id, [el.lon, el.lat]); });
+  const roads = {type:'FeatureCollection', features:[]};
+  const buildings = {type:'FeatureCollection', features:[]};
+  (json.elements || []).forEach(el => {
+    if(el.type !== 'way' || !el.nodes) return;
+    const coords = el.nodes.map(id => nodes.get(id)).filter(Boolean);
+    if(coords.length < 2) return;
+    if(el.tags && el.tags.highway){
+      roads.features.push({type:'Feature', geometry:{type:'LineString', coordinates:coords}, properties:{highway: el.tags.highway}});
+    }
+    if(el.tags && el.tags.building && coords.length >= 4){
+      const closed = coords[0][0] === coords.at(-1)[0] && coords[0][1] === coords.at(-1)[1] ? coords : [...coords, coords[0]];
+      const buildingType = el.tags.building;
+      const levels = Number(el.tags['building:levels']) || 1;
+      buildings.features.push({
+        type:'Feature',
+        geometry:{type:'Polygon', coordinates:[closed]},
+        properties:{
+          kind: buildingType === 'house' || buildingType === 'residential' || buildingType === 'detached' ? 'house' : buildingType,
+          height: Math.max(6, Math.min(28, levels * 4 + 3))
+        }
+      });
+    }
+  });
+  return {roads, buildings};
+}
+
+function sampleWorld(c){
+  const roads = {type:'FeatureCollection', features:[]};
+  const buildings = {type:'FeatureCollection', features:[]};
+  const r1 = [meters(c.lat,c.lng,-230,110), meters(c.lat,c.lng,240,-110)];
+  const r2 = [meters(c.lat,c.lng,-230,-70), meters(c.lat,c.lng,230,150)];
+  const r3 = [meters(c.lat,c.lng,120,-250), meters(c.lat,c.lng,120,250)];
+  [r1,r2,r3].forEach(coords => roads.features.push({type:'Feature', geometry:{type:'LineString', coordinates:coords.map(p=>[p.lng,p.lat])}, properties:{}}));
+  [[-120,40],[35,-30],[130,80],[-70,-140],[180,-90]].forEach(([e,n],i) => {
+    const center = meters(c.lat,c.lng,e,n);
+    const p1 = meters(center.lat, center.lng,-18,-12);
+    const p2 = meters(center.lat, center.lng,18,-12);
+    const p3 = meters(center.lat, center.lng,18,12);
+    const p4 = meters(center.lat, center.lng,-18,12);
+    buildings.features.push({type:'Feature', geometry:{type:'Polygon', coordinates:[[[p1.lng,p1.lat],[p2.lng,p2.lat],[p3.lng,p3.lat],[p4.lng,p4.lat],[p1.lng,p1.lat]]]}, properties:{kind:'house', height:8 + (i%3)*3}});
+  });
+  return {roads, buildings};
+}
+
+async function loadWorld(center){
+  setStatus('Loading nearby streets…');
+  let world = sampleWorld(center);
+  let usedLive = false;
+  try {
+    const query = `[out:json][timeout:18];(way["highway"](around:380,${center.lat},${center.lng});way["building"](around:380,${center.lat},${center.lng}););out body;>;out skel qt;`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch('https://overpass.kumi.systems/api/interpreter', {
+      method:'POST', body:new URLSearchParams({data:query}), signal:controller.signal
+    });
+    clearTimeout(timer);
+    if(!response.ok) throw new Error('Map data request failed');
+    const json = await response.json();
+    const parsed = overpassGeo(json);
+    if(parsed.roads.features.length){ world = parsed; usedLive = true; }
+  } catch (err) {
+    console.warn('Falling back to sample world', err);
+  }
+  map.getSource('roads').setData(world.roads);
+  map.getSource('buildings').setData(world.buildings);
+  if(usedLive){
+    setStatus(gpsReady ? 'GPS connected · real streets loaded' : 'Real streets loaded · waiting for GPS');
+  } else {
+    setStatus('Using sample streets while real map data loads', true);
+  }
+}
+
+async function connectFirebase(){
+  try {
+    const { getHouses } = await import('./firebase.js');
+    const houses = await getHouses();
+    realHouses = houses.filter(h => Number.isFinite(h.lat) && Number.isFinite(h.lng));
+    refreshMarkers();
+  } catch (err) {
+    console.info('Firebase houses unavailable', err);
+    realHouses = [];
+    refreshMarkers();
+  }
+}
+
+function startGPS(){
+  if(!navigator.geolocation){
+    setStatus('This browser does not support GPS', true);
+    $('gpsBtn').classList.remove('active');
+    return;
+  }
+  if(gpsWatch !== null) return;
+  setStatus('Requesting GPS permission…');
+  gpsWatch = navigator.geolocation.watchPosition(async pos => {
+    gpsReady = true;
+    walker = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    updateAvatar(true);
+    $('gpsBtn').classList.add('active');
+    $('followBtn').classList.add('active');
+    following = true;
+    const acc = Math.round(pos.coords.accuracy || 0);
+    setStatus(`GPS on · accuracy ±${acc} m`);
+    if(!map.__loadedLiveArea){
+      map.__loadedLiveArea = true;
+      map.flyTo({center:[walker.lng, walker.lat], zoom:18.2, pitch:68, bearing:-18, duration:1200});
+      await loadWorld(walker);
+      await connectFirebase();
+    }
+  }, err => {
+    console.warn('GPS error', err);
+    let message = 'Location unavailable';
+    if(err.code === 1) message = 'Location permission denied';
+    if(err.code === 2) message = 'Position unavailable';
+    if(err.code === 3) message = 'GPS request timed out';
+    setStatus(`${message} · using default view`, true);
+    $('gpsBtn').classList.remove('active');
+    gpsWatch = null;
+  }, {enableHighAccuracy:true, maximumAge:4000, timeout:12000});
+}
+
+function stopGPS(){
+  if(gpsWatch !== null){
+    navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+  }
+  gpsReady = false;
+  $('gpsBtn').classList.remove('active');
+  setStatus('GPS paused');
+}
+
+map = new maplibregl.Map({
+  container:'map',
+  style:{version:8, glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources:{}, layers:[]},
+  center:[walker.lng, walker.lat], zoom:17.6, pitch:68, bearing:-18, antialias:true
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false, showZoom:false}), 'bottom-right');
+map.on('load', async () => {
+  setupLayers();
+  avatarMarker = new maplibregl.Marker({element: buildAvatarElement(), anchor:'bottom'})
+    .setLngLat([walker.lng, walker.lat]).addTo(map);
+  await loadWorld(walker);
+  await connectFirebase();
+  startGPS();
+});
+map.on('dragstart', () => { following = false; $('followBtn').classList.remove('active'); });
+
+$('gpsBtn').addEventListener('click', () => {
+  if(gpsWatch === null) startGPS(); else stopGPS();
+});
+$('followBtn').addEventListener('click', () => {
+  following = !following;
+  $('followBtn').classList.toggle('active', following);
+  if(following) map.easeTo({center:[walker.lng, walker.lat], duration:500});
+});
+$('rotateBtn').addEventListener('click', () => map.easeTo({bearing: map.getBearing() - 35, duration:500}));
+$('tiltBtn').addEventListener('click', () => {
+  const low = map.getPitch() > 50;
+  map.easeTo({pitch: low ? 28 : 68, zoom: low ? 16.9 : 18.2, duration:700});
+});
+$('infoBtn').addEventListener('click', () => $('info').classList.add('show'));
+$('closeInfo').addEventListener('click', () => $('info').classList.remove('show'));
+$('closeCard').addEventListener('click', closeCard);
+$('dismissBtn').addEventListener('click', closeCard);
+$('centerBtn').addEventListener('click', () => {
+  if(selected){
+    following = false;
+    $('followBtn').classList.remove('active');
+    map.flyTo({center:[selected.lng, selected.lat], zoom:18.7, pitch:68, duration:900});
+  }
+  closeCard();
+});
+</script>
+</body>
+</html>
